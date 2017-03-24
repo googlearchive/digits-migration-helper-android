@@ -15,6 +15,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="@string/FABRIC_API_KEY" />
+        <meta-data
+            android:name="com.digits.sdk.android.ConsumerKey"
+            android:value="@string/CONSUMER_KEY" />
+        <meta-data
+            android:name="com.digits.sdk.android.ConsumerSecret"
+            android:value="@string/CONSUMER_SECRET" />
     </application>
+
 
 </manifest>

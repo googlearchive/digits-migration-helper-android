@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+Properties props = new Properties()
+try {
+    props.load(file('digits.properties').newDataInputStream())
+} catch (Exception ex) {
+    throw new GradleException("Missing digits.properties, check the digits.properties.sample file.");
+}
+
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
@@ -12,7 +19,15 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
+        debug {
+            resValue "string", "CONSUMER_KEY", "\"${props.getProperty("twitterConsumerKey")}\""
+            resValue "string", "CONSUMER_SECRET", "\"${props.getProperty("twitterConsumerSecret")}\""
+            resValue "string", "FABRIC_API_KEY", "\"${props.getProperty("fabricApiKey")}\""
+        }
         release {
+            resValue "string", "CONSUMER_KEY", "\"${props.getProperty("twitterConsumerKey")}\""
+            resValue "string", "CONSUMER_SECRET", "\"${props.getProperty("twitterConsumerSecret")}\""
+            resValue "string", "FABRIC_API_KEY", "\"${props.getProperty("fabricApiKey")}\""
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
