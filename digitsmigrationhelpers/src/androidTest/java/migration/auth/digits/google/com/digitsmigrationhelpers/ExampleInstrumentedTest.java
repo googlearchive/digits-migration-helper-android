@@ -1,4 +1,4 @@
-package migration.auth.digits.google.com.migrantdigitsapplication;
+package migration.auth.digits.google.com.digitsmigrationhelpers;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("migration.auth.digits.google.com.migrantdigitsapplication", appContext.getPackageName());
+        assertEquals("migration.auth.digits.google.com.digitsmigrationhelpers.test", appContext.getPackageName());
     }
 }

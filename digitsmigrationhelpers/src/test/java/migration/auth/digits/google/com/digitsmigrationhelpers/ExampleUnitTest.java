@@ -1,4 +1,4 @@
-package migration.auth.digits.google.com.migrantdigitsapplication;
+package migration.auth.digits.google.com.digitsmigrationhelpers;
 
 import org.junit.Test;
 
