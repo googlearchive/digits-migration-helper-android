@@ -1,8 +1,10 @@
-package com.google.digits.auth.migration.internal;
+package migration.auth.digits.google.com.digitsmigrationhelpers;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
+
+import com.google.digits.auth.migration.internal.RedeemableDigitsSession;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -155,6 +157,7 @@ public class RedeemableDigitsSessionBuilder {
         builder.setAuthTokenSecret(safeGetString(NESTED_TOKEN_SECRET_KEY, nestedAuthTokenJsonObject));
 
         return builder;
+
     }
 
     private static JSONObject safeGetJsonObject(String key, JSONObject jsonObject)

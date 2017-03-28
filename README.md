@@ -38,6 +38,8 @@ AuthMigrator.getInstance().migrate()
         }
 });
 ```
+//TODO(ashwinraghav) Link here
+To see a detailed example, see our sample migration app.
 
 Support
 -------

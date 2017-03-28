@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">MigrantDigitsApplication</string>
-    <string name="digits_auth_token">Auth token</string>
-    <string name="digits_auth_token_secret">Token secret</string>
-    <string name="create_digits_session">Create Digits Session</string>
+    <string name="digits_auth_token">token</string>
+    <string name="digits_auth_token_secret">secret</string>
+    <string name="migrate_custom_tokens">migrate(token, secret)</string>
+    <string name="migrate_default_session">migrate_default_session</string>
 </resources>

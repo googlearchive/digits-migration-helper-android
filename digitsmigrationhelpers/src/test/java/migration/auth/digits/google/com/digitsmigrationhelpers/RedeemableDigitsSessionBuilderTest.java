@@ -1,6 +1,8 @@
-package com.google.digits.auth.migration;
+package migration.auth.digits.google.com.digitsmigrationhelpers;
 
-import com.google.digits.auth.migration.internal.RedeemableDigitsSessionBuilder;
+import com.google.digits.auth.migration.RobolectricGradleTestRunner;
+
+import migration.auth.digits.google.com.digitsmigrationhelpers.RedeemableDigitsSessionBuilder;
 
 import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertEquals;

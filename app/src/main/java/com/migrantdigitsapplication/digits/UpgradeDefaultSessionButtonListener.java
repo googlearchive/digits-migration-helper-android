@@ -29,16 +29,19 @@ public class UpgradeDefaultSessionButtonListener implements Button.OnClickListen
                 if (task.isSuccessful()) {
                     if (task.getResult().getUser() != null) {
                         Toast.makeText(context,
-                                "Found user " + task.getResult().getUser().getUid(), Toast.LENGTH_LONG);
+                                "Found user " + task.getResult().getUser().getUid(),
+                                Toast.LENGTH_LONG).show();
                     } else {
                         //No valid digits session was found
                         Toast.makeText(context,
-                                "No valid digits session found", Toast.LENGTH_LONG);
+                                "No valid digits session found", Toast.LENGTH_LONG).show();
                     }
                 } else {
                     //an error accured
                     Toast.makeText(context,
-                            "Error while upgrading digits session", Toast.LENGTH_LONG);
+                            "Error while upgrading digits session: "
+                                    + task.getException().getLocalizedMessage(),
+                            Toast.LENGTH_LONG).show();
                 }
             }
         });
