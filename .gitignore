@@ -17,3 +17,6 @@ app/digits.properties
 
 # Misc
 .DS_Store
+
+#Google services config
+app/google-services.json
