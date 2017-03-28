@@ -8,9 +8,36 @@ Pre-requisites
 --------------
 TODO(ashwinraghav): Link to Migration Doc
 
+Before using this code, you must add the [Firebase/Auth modules](https://firebase.google.com/docs/auth/android/start/) to your project.
+
 Getting Started
 ---------------
-TODO(ashwinraghav)
+1. To you app module's build.gradle, add:
+```groovy
+compile 'digitsmigrator'
+```
+2. In your Application's or main Activity's `onCreate()` override,
+   call `migrate()` to log in any user who was previously logged in with the
+   legacy SDK.
+```java
+AuthMigrator.getInstance().migrate()
+.addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+        @Override
+        public void onComplete(@NonNull Task<AuthResult> task) {
+            if (task.isSuccessful()) {
+                if (task.getResult().getUser() != null) {
+                    // Either your existing user remains logged in
+                    // or a FirebaseUser was created from your 
+                    // digits Auth state.
+                } else {
+                    //No valid digits session was found
+                }
+            } else {
+                //an error accured
+            }
+        }
+});
+```
 
 Support
 -------
