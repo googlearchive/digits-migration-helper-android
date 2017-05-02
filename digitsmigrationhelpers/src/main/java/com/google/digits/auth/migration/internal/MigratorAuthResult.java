@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All Rights Reserved.
+ * Copyright 2017 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,10 +14,13 @@
 
 package com.google.digits.auth.migration.internal;
 
+import android.support.annotation.RestrictTo;
+
 import com.google.firebase.auth.AdditionalUserInfo;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseUser;
 
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public class MigratorAuthResult implements AuthResult {
     private final FirebaseUser user;
 

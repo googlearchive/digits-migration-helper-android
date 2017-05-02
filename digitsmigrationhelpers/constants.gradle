@@ -11,22 +11,16 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ext {
+    projectName = 'digits-migration-helper-android'
+    projectDesc = 'A wrapper library to exchange digits sessions for firebase sessions'
 
-package com.google.digits.auth.migration.internal;
+    //TODO(ashwinraghav) Validate github url
+    githubUrl = 'https://github.com/googlesamples/digits-migration-helper-android'
 
-import android.support.annotation.RestrictTo;
+    mavenGroup = 'pub.devrel'
+    mavenArtifactId = 'digitsmigrationhelpers'
+    mavenVersion = '0.1.3'
 
-import com.google.firebase.FirebaseException;
-
-@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-public class FirebaseWebRequestException extends FirebaseException {
-    private final int httpStatusCode;
-
-    public FirebaseWebRequestException(String message, int httpStatusCode) {
-        this.httpStatusCode = httpStatusCode;
-    }
-
-    public int getHttpStatusCode() {
-        return httpStatusCode;
-    }
+    bintrayOrg = 'firebase'
 }

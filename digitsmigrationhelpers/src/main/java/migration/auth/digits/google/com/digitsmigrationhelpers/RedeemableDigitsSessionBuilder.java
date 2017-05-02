@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All Rights Reserved.
+ * Copyright 2017 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -51,8 +51,8 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set digits user id
-     * @param id
-     * @return
+     * @param id digits user id
+     * @return   builder
      */
     public RedeemableDigitsSessionBuilder setId(Long id) {
         this.id = id;
@@ -61,8 +61,8 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set phone number
-     * @param phoneNumber
-     * @return
+     * @param phoneNumber digits user's phone number
+     * @return            builder
      */
     public RedeemableDigitsSessionBuilder setPhoneNumber(@Nullable String phoneNumber) {
         this.phoneNumber = phoneNumber;
@@ -71,8 +71,8 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set email address
-     * @param email
-     * @return
+     * @param email digits user's email address
+     * @return      builder
      */
     public RedeemableDigitsSessionBuilder setEmail(@Nullable String email) {
         this.email = email;
@@ -81,8 +81,8 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set Is the email verified
-     * @param isEmailVerified
-     * @return
+     * @param isEmailVerified whether the digits user's email was verified
+     * @return                builder
      */
     public RedeemableDigitsSessionBuilder setIsEmailVerified(@Nullable Boolean isEmailVerified) {
         this.isEmailVerified = isEmailVerified;
@@ -91,8 +91,8 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set auth token issued for the user by the digits server
-     * @param authToken
-     * @return
+     * @param authToken OAuth1a token issued to the digits user
+     * @return          builder
      */
     public RedeemableDigitsSessionBuilder setAuthToken(@Nullable String authToken) {
         this.authToken = authToken;
@@ -101,8 +101,8 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set secret issued for the user by the digits server
-     * @param authTokenSecret
-     * @return
+     * @param authTokenSecret OAuth1a secret issued to the digits user
+     * @return                builder
      */
     public RedeemableDigitsSessionBuilder setAuthTokenSecret(@Nullable String authTokenSecret) {
         this.authTokenSecret = authTokenSecret;
@@ -111,8 +111,8 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set digits consumer key issued to the app at Fabric.io
-     * @param consumerKey
-     * @return
+     * @param consumerKey consumer key issued to identify the app
+     * @return            builder
      */
     public RedeemableDigitsSessionBuilder setConsumerKey(@Nullable String consumerKey) {
         this.consumerKey = consumerKey;
@@ -121,8 +121,8 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set digits consumer secret issued to the app at Fabric.io
-     * @param consumerSecret
-     * @return
+     * @param consumerSecret consumer secret issued to authenticate the app
+     * @return               builder
      */
     public RedeemableDigitsSessionBuilder setConsumerSecret(@Nullable String consumerSecret) {
         this.consumerSecret = consumerSecret;
@@ -131,8 +131,8 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set Fabric api key issued to the app at Fabric.io
-     * @param fabricApiKey
-     * @return
+     * @param fabricApiKey fabric api key
+     * @return             builder
      */
     public RedeemableDigitsSessionBuilder setFabricApiKey(@Nullable String fabricApiKey) {
         this.fabricApiKey = fabricApiKey;
@@ -141,7 +141,7 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Build {@link RedeemableDigitsSession} using the parameters provided
-     * @return
+     * @return redeemable digits session
      */
     public RedeemableDigitsSession build() {
         return new RedeemableDigitsSession(id, phoneNumber, email, isEmailVerified, authToken,

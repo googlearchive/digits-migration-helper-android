@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All Rights Reserved.
+ * Copyright 2017 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -21,6 +21,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RestrictTo;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -29,9 +30,7 @@ import org.json.JSONObject;
 
 import java.nio.charset.Charset;
 
-/**
- * @hide
- */
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public class StorageHelpers {
     private final SharedPreferences mDigitsSharedPreferences;
     public static final String DIGITS_SESSION_PREF_FILE_NAME =

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All Rights Reserved.
+ * Copyright 2017 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,13 +16,12 @@ package com.google.digits.auth.migration.internal;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RestrictTo;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/**
- * @hide
- */
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public class RedeemableDigitsSession {
 
     @NonNull

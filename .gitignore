@@ -15,6 +15,9 @@ captures/
 #Digits properties
 app/digits.properties
 
+#Fabric properties
+app/fabric.properties
+
 # Misc
 .DS_Store
 
