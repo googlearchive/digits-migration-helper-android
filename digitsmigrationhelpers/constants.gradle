@@ -18,7 +18,7 @@ ext {
     //TODO(ashwinraghav) Validate github url
     githubUrl = 'https://github.com/googlesamples/digits-migration-helper-android'
 
-    mavenGroup = 'pub.devrel'
+    mavenGroup = 'com.firebase'
     mavenArtifactId = 'digitsmigrationhelpers'
     mavenVersion = '0.1.3'
 
