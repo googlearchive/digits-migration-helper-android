@@ -12,33 +12,38 @@
 ~ limitations under the License.
 ~
 -->
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="migration.auth.digits.google.com.migrantdigitsapplication">
+          xmlns:tools="http://schemas.android.com/tools"
+          package="migration.auth.digits.google.com.migrantdigitsapplication">
 
     <application
+        android:name="com.migrantdigitsapplication.digits.MigrantDigitsApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <!--Swap this out to be
+        com.migrantdigitsapplication.digits.TestDigitsActivity to create digits session-->
         <activity android:name="com.migrantdigitsapplication.digits.MainActivity">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.MAIN"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name="com.migrantdigitsapplication.digits.LoggedInActivity"/>
+
         <meta-data
             android:name="io.fabric.ApiKey"
-            android:value="@string/FABRIC_API_KEY" />
+            android:value="@string/FABRIC_API_KEY"
+            tools:replace="android:value"/>
         <meta-data
             android:name="com.digits.sdk.android.ConsumerKey"
-            android:value="@string/CONSUMER_KEY" />
+            android:value="@string/CONSUMER_KEY"/>
         <meta-data
             android:name="com.digits.sdk.android.ConsumerSecret"
-            android:value="@string/CONSUMER_SECRET" />
+            android:value="@string/CONSUMER_SECRET"/>
+        />
     </application>
-
-
 </manifest>

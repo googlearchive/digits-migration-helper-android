@@ -16,10 +16,13 @@ package com.google.digits.auth.migration.internal;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.RestrictTo;
+import android.util.Log;
 
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
+
+import static android.content.ContentValues.TAG;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public class ClearSessionContinuation implements Continuation<AuthResult, Task<AuthResult>> {
@@ -37,6 +40,7 @@ public class ClearSessionContinuation implements Continuation<AuthResult, Task<A
                 throw task.getException();
             } catch (FirebaseWebRequestException e) {
                 if (e.getHttpStatusCode() == 400 || e.getHttpStatusCode() == 403) {
+                    Log.d(TAG, "Digits session deemed invalid by server. Clearing...");
                     // Permanent errors should clear the persistence key.
                     storageHelpers.clearDigitsSession();
                 }

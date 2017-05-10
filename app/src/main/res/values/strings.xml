@@ -4,4 +4,11 @@
     <string name="digits_auth_token_secret">secret</string>
     <string name="migrate_custom_tokens">migrate(token, secret)</string>
     <string name="migrate_default_session">migrate_default_session</string>
+    <string name="reauthenticate">Reauth</string>
+    <string name="delete_account_label">Delete account</string>
+    <string name="user_profile_header">User profile:</string>
+    <string name="profile_picture_content_desc">Profile picture</string>
+    <string name="idp_token">IDP Token</string>
+    <string name="idp_secret">IDP Secret</string>
+    <string name="sign_out">Sign out</string>
 </resources>

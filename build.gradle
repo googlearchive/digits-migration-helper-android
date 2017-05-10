@@ -15,11 +15,11 @@ buildscript {
     repositories {
         jcenter()
         mavenLocal()
+        maven { url 'https://maven.fabric.io/public' }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.3.1'
-        //TODO(ashwinraghav): Tighten versioning
-        classpath 'com.google.gms:google-services:3+'
+        classpath 'com.google.gms:google-services:3.0.0'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.2'
     }

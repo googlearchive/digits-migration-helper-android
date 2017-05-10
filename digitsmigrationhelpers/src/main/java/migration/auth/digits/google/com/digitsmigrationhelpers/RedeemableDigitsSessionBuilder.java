@@ -17,18 +17,22 @@ package migration.auth.digits.google.com.digitsmigrationhelpers;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
+import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.digits.auth.migration.internal.RedeemableDigitsSession;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.regex.Pattern;
+
 /**
  * Build a Digits session that can be exchanged for a user on the firebase SDK using the
  * {@link AuthMigrator}
  */
 public class RedeemableDigitsSessionBuilder {
-
+    private static final String TAG = "Digits";
     private Long id;
     private String phoneNumber;
     private String email;
@@ -49,10 +53,27 @@ public class RedeemableDigitsSessionBuilder {
 
     private static final String ID_KEY = "id";
 
+    private static final String EXAMPLE_FABRIC_API_ENTRY =
+            "\n<meta-data"
+            + "\n\tandroid:name=\"io.fabric.ApiKey\""
+            + "\n\tandroid:value=\"YOUR_FABRIC_API_KEY\""
+            + "\n\ttools:replace=\"android:value\" />\n";
+    private static final String EXAMPLE_CONSUMER_KEY_ENTRY =
+            "\n<meta-data"
+            + "\n\tandroid:name=\"com.digits.sdk.android.ConsumerKey\""
+            + "\n\tandroid:value=\"YOUR_DIGITS_CONSUMER_KEY\""
+            + "\n\ttools:replace=\"android:value\" />\n";
+    private static final String EXAMPLE_CONSUMER_SECRET_ENTRY =
+            "\n<meta-data" +
+            "\n\tandroid:name=\"com.digits.sdk.android.ConsumerSecret\"" +
+            "\n\tandroid:value=\"YOUR_DIGITS_CONSUMER_SECRET\"" +
+            "\n\ttools:replace=\"android:value\" />\n";
+
     /**
      * Set digits user id
+     *
      * @param id digits user id
-     * @return   builder
+     * @return builder
      */
     public RedeemableDigitsSessionBuilder setId(Long id) {
         this.id = id;
@@ -61,8 +82,9 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set phone number
+     *
      * @param phoneNumber digits user's phone number
-     * @return            builder
+     * @return builder
      */
     public RedeemableDigitsSessionBuilder setPhoneNumber(@Nullable String phoneNumber) {
         this.phoneNumber = phoneNumber;
@@ -71,8 +93,9 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set email address
+     *
      * @param email digits user's email address
-     * @return      builder
+     * @return builder
      */
     public RedeemableDigitsSessionBuilder setEmail(@Nullable String email) {
         this.email = email;
@@ -81,8 +104,9 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set Is the email verified
+     *
      * @param isEmailVerified whether the digits user's email was verified
-     * @return                builder
+     * @return builder
      */
     public RedeemableDigitsSessionBuilder setIsEmailVerified(@Nullable Boolean isEmailVerified) {
         this.isEmailVerified = isEmailVerified;
@@ -91,8 +115,9 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set auth token issued for the user by the digits server
+     *
      * @param authToken OAuth1a token issued to the digits user
-     * @return          builder
+     * @return builder
      */
     public RedeemableDigitsSessionBuilder setAuthToken(@Nullable String authToken) {
         this.authToken = authToken;
@@ -101,8 +126,9 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set secret issued for the user by the digits server
+     *
      * @param authTokenSecret OAuth1a secret issued to the digits user
-     * @return                builder
+     * @return builder
      */
     public RedeemableDigitsSessionBuilder setAuthTokenSecret(@Nullable String authTokenSecret) {
         this.authTokenSecret = authTokenSecret;
@@ -111,46 +137,72 @@ public class RedeemableDigitsSessionBuilder {
 
     /**
      * Set digits consumer key issued to the app at Fabric.io
+     *
      * @param consumerKey consumer key issued to identify the app
-     * @return            builder
+     * @return builder
      */
-    public RedeemableDigitsSessionBuilder setConsumerKey(@Nullable String consumerKey) {
+    public RedeemableDigitsSessionBuilder setConsumerKey(@NonNull String consumerKey) {
         this.consumerKey = consumerKey;
         return this;
     }
 
     /**
      * Set digits consumer secret issued to the app at Fabric.io
+     *
      * @param consumerSecret consumer secret issued to authenticate the app
-     * @return               builder
+     * @return builder
      */
-    public RedeemableDigitsSessionBuilder setConsumerSecret(@Nullable String consumerSecret) {
+    public RedeemableDigitsSessionBuilder setConsumerSecret(@NonNull String consumerSecret) {
         this.consumerSecret = consumerSecret;
         return this;
     }
 
     /**
      * Set Fabric api key issued to the app at Fabric.io
+     *
      * @param fabricApiKey fabric api key
-     * @return             builder
+     * @return builder
      */
-    public RedeemableDigitsSessionBuilder setFabricApiKey(@Nullable String fabricApiKey) {
+    public RedeemableDigitsSessionBuilder setFabricApiKey(@NonNull String fabricApiKey) {
         this.fabricApiKey = fabricApiKey;
         return this;
     }
 
     /**
      * Build {@link RedeemableDigitsSession} using the parameters provided
+     *
+     * We permit null auth token and secret as permissible but corrupt tokens. Once these are
+     * invalidated by the service, these are deleted from the client in
+     * {@link com.google.digits.auth.migration.internal.ClearSessionContinuation}
+
      * @return redeemable digits session
      */
     public RedeemableDigitsSession build() {
+        checkNotNull(authToken, "Auth Token cannot be null");
+        checkNotNull(authTokenSecret, "Token Secret cannot be null");
+
+        failNotNull(consumerKey, "Consumer Key cannot be empty. "
+                + "Your AndroidManifest.xml should have an entry like: "
+                + EXAMPLE_CONSUMER_KEY_ENTRY);
+        failNotNull(consumerSecret, "Consumer Secret cannot be empty. "
+                + "Your AndroidManifest.xml should have an entry like:"
+                + EXAMPLE_CONSUMER_SECRET_ENTRY);
+        failNotNull(fabricApiKey, "Fabric Api Key cannot be empty. "
+                + "Your AndroidManifest.xml should have an entry like: "
+                + EXAMPLE_FABRIC_API_ENTRY);
+
+        if(!isValidApiKeyFormat(fabricApiKey)) {
+            throw new IllegalArgumentException("Invalid Fabric API key." +
+                    "Contact support@fabric.io for assistance");
+        }
+
         return new RedeemableDigitsSession(id, phoneNumber, email, isEmailVerified, authToken,
                 authTokenSecret, consumerKey, consumerSecret, fabricApiKey);
     }
 
     @NonNull
-    static RedeemableDigitsSessionBuilder fromSessionJson(
-            @NonNull String json) throws JSONException {
+    static RedeemableDigitsSessionBuilder fromSessionJson(@NonNull String json) throws
+            JSONException {
         RedeemableDigitsSessionBuilder builder = new RedeemableDigitsSessionBuilder();
 
         //Top level structures
@@ -162,20 +214,22 @@ public class RedeemableDigitsSessionBuilder {
         builder.setId(safeGetLong(ID_KEY, jsonObject));
 
         //Nested Structures
-        JSONObject nestedAuthTokenJsonObject = safeGetJsonObject(AUTH_TOKEN_KEY, authTokenJsonObject);
+        JSONObject nestedAuthTokenJsonObject = safeGetJsonObject(AUTH_TOKEN_KEY,
+                authTokenJsonObject);
 
         builder.setEmail(safeGetString(EMAIL_ADDRESS_KEY, emailJsonObject));
         builder.setIsEmailVerified(safeGetBoolean(IS_EMAIL_ADDRESS_VERIFIED_KEY, emailJsonObject));
 
         builder.setAuthToken(safeGetString(NESTED_TOKEN_KEY, nestedAuthTokenJsonObject));
-        builder.setAuthTokenSecret(safeGetString(NESTED_TOKEN_SECRET_KEY, nestedAuthTokenJsonObject));
+        builder.setAuthTokenSecret(safeGetString(NESTED_TOKEN_SECRET_KEY,
+                nestedAuthTokenJsonObject));
 
         return builder;
 
     }
 
-    private static JSONObject safeGetJsonObject(String key, JSONObject jsonObject)
-            throws JSONException {
+    private static JSONObject safeGetJsonObject(String key, JSONObject jsonObject) throws
+            JSONException {
         return safeHasKey(jsonObject, key) ? jsonObject.getJSONObject(key) : null;
     }
 
@@ -193,5 +247,31 @@ public class RedeemableDigitsSessionBuilder {
 
     private static boolean safeHasKey(JSONObject jsonObject, String key) {
         return key != null && jsonObject != null && jsonObject.has(key);
+    }
+
+    private static <T> T checkNotNull(T reference, @Nullable Object errorMessage) {
+        if(reference instanceof String && TextUtils.isEmpty((String) reference)) {
+            Log.d(TAG, String.valueOf(errorMessage));
+        }else if (reference == null) {
+            Log.d(TAG, String.valueOf(errorMessage));
+        }
+        return reference;
+    }
+
+    private static <T> T failNotNull(T reference, @Nullable Object errorMessage) {
+        if(reference instanceof String && TextUtils.isEmpty((String) reference)) {
+            throw new IllegalArgumentException(String.valueOf(errorMessage));
+        } else if (reference == null) {
+            throw new IllegalArgumentException(String.valueOf(errorMessage));
+        }
+        return reference;
+    }
+
+    public static boolean isValidApiKeyFormat(@NonNull String apiKey) {
+        if (apiKey == null) {
+            return false;
+        }
+
+        return apiKey.length() == 40 && Pattern.compile("[0-9a-f]+").matcher(apiKey).matches();
     }
 }

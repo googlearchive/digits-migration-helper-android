@@ -17,7 +17,9 @@ package migration.auth.digits.google.com.digitsmigrationhelpers;
 import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.annotation.VisibleForTesting;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -43,6 +45,7 @@ public final class AuthMigrator {
     private final StorageHelpers storageHelpers;
     private final FirebaseAuth firebaseAuth;
     private final FirebaseApp app;
+    private static String TAG = "DigitsAuthMigrator";
 
     /**
      * Gets an instance of {@link AuthMigrator}
@@ -85,37 +88,21 @@ public final class AuthMigrator {
 
     /**
      * Migrates a user token from the Digits SDK, making that user the current user
-     * in the new Firebase SDK. This method can be used by apps that have tokens they wish to
-     * exchange. To exchange the tokens found on the client, use {@link #migrate()}
-     * <p>
-     * This works as follows:
-     * <ol>
-     * <li>Sends the legacy token and keys provided by the caller in the
-     * {@link RedeemableDigitsSessionBuilder} to a Firebase server to exchange it for a new
+     * in the new Firebase SDK. This is the recommended method that most apps would want to use.
+     * This method works as follows:
+     * <ol> <li>If a user is already logged in with the new Firebase SDK, then the legacy auth token
+     * will be (optionally) removed, but the logged in user will not be affected</li>
+     * <li>Looks up the legacy digits auth token.</li>
+     * <li>Looks for the following keys in the app manifest: "io.fabric.ApiKey",
+     * "com.digits.sdk.android.ConsumerKey", "com.digits.sdk.android.ConsumerSecret"</li>
+     * <li>Sends the legacy token and  keys to a Firebase server to exchange it for a new
      * Firebase auth token.</li>
      * <li>Uses the new auth token to log in the user.</li>
-     * <li>Removes the legacy digits auth token from the device.</li>
-     * </ol>
+     * <li>Removes the legacy digits auth token from the device.</li></ol>
      * <p>
-     * If a user is already logged in with the new Firebase SDK, then the legacy auth token will be
-     * removed, but the logged in user will not be affected.
-     * <p>
-     * If the Firebase server determines that the legacy auth token is invalid, it will be removed
-     * and the user will not be logged in.
-     *
-     * @param builder containing app info (consumer_key and secret), user info(OAuth token and
-     *                secret, fabric_api_key)
-     * @return task representing the token exchange process. Apps can listen to the status of the
-     * returned task using {@link Task#addOnCompleteListener(Activity, OnCompleteListener)}
-     */
-    public Task<AuthResult> migrate(RedeemableDigitsSessionBuilder builder) {
-        return firebaseAuth.signInWithCustomToken(storageHelpers.getUnsignedJWT(builder.build()
-                .getPayload())).continueWithTask(new ClearSessionContinuation(storageHelpers));
-    }
-
-    /**
-     * Migrates a user token from the Digits SDK, making that user the current user
-     * in the new Firebase SDK. This is the recommended method that most apps would want to use.
+     * If the Firebase server determines that the legacy auth token is invalid, it will be
+     * removed from the device and the user will not be logged in.
+     * Sample:
      * <pre>
      * <code>AuthMigrator.getInstance().migrate().addOnCompleteListener(new{@code
      * OnCompleteListener<AuthResult>}() {
@@ -139,30 +126,108 @@ public final class AuthMigrator {
      *          }
      *     }
      * });</code></pre>
-     * This method works as follows:
-     * <ol><li>Looks up the legacy digits auth token.</li>
-     * <li>Looks for the "io.fabric.ApiKey" in the app manifest</li>
-     * <li>Looks for the ""com.digits.sdk.android.ConsumerKey"" in the appmanifest</li>
-     * <li>Looks for the ""com.digits.sdk.android.ConsumerSecret"" in the app manifest</li>
-     * <li>Sends the legacy token and keys to a Firebase server to exchange it for a new Firebase
-     * auth token.</li>
-     * <li>Uses the new auth token to log in the user.</li>
-     * <li>Removes the legacy digits auth token from the device.</li></ol>
-     * <p>
-     * If a user is already logged in with the new Firebase SDK, then the
-     * legacy auth token will be
-     * removed, but the logged in user will not be affected.
-     * <p>
-     * If the Firebase server determines that the legacy auth token is invalid, it will be
-     * removed and the user will not be logged in.
-     *
+     * @param cleanupDigitsSession whether the legacy digits session should be cleaned up after a
+     *                             successful exchange or if found to be invalid.
      * @return task representing the token exchange process. Apps can listen to the status of the
-     * returned task using {@link Task#addOnCompleteListener(Activity, OnCompleteListener)}
+     * returned task using {@link Task#addOnCompleteListener(Activity, OnCompleteListener)}.
+     * The task succeeds in all of the following situations:
+     * <ol><li>Legacy digits session was successfuly exchanged</li>
+     * <li>No legacy digits session was found</li>
+     * <li>An existing firebase session was found and no attempt was made to exchange the digits
+     * token</li>
+     * </ol>
+     * The task fails only when digits token was found and:
+     * <ol><li>The server was unable to validate it. The corrupt session is automatically cleared</li>
+     * <li>The server failed for internal reasons. The legacy session is retained to permit
+     * retries initiated from the app</li>
+     * </ol>
      */
-    public Task<AuthResult> migrate() {
-        String digitsSessionJson = storageHelpers.getDigitsSessionJson();
-        return TextUtils.isEmpty(digitsSessionJson) ? Tasks.forResult((AuthResult) new
-                MigratorAuthResult(null)) : migrate(digitsSessionJson);
+    public Task<AuthResult> migrate(boolean cleanupDigitsSession) {
+        final FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+        final String sessionJson = storageHelpers.getDigitsSessionJson();
+        final Context context = app.getApplicationContext();
+        final RedeemableDigitsSessionBuilder builder;
+
+        // If there's already a current user, don't migrate and clear the legacy token.
+        if (currentUser != null) {
+            Log.d(TAG, "Found existing firebase session. Skipping Exchange.");
+            if(cleanupDigitsSession) {
+                Log.d(TAG, "Clearning legacy session");
+                storageHelpers.clearDigitsSession();
+            }
+            return Tasks.forResult((AuthResult) new MigratorAuthResult(currentUser));
+        }
+
+        // If no legacy session found, return
+        if(sessionJson == null) {
+            Log.d(TAG, "No digits session found");
+            return cleanupAndCreateEmptyResult(cleanupDigitsSession);
+        }
+
+        Log.d(TAG, "Found digits session");
+
+        // If session is invalid, return
+        try {
+            builder = RedeemableDigitsSessionBuilder.fromSessionJson(sessionJson);
+        } catch (JSONException e) {
+            Log.d(TAG, "Digits sesion is corrupt");
+            //invalid session
+            return cleanupAndCreateEmptyResult(cleanupDigitsSession);
+        }
+
+        builder.setConsumerKey(storageHelpers.getApiKeyFromManifest(context,
+                        StorageHelpers.DIGITS_CONSUMER_KEY_KEY))
+                .setConsumerSecret(storageHelpers.getApiKeyFromManifest(context,
+                        StorageHelpers.DIGITS_CONSUMER_SECRET_KEY))
+                .setFabricApiKey(storageHelpers.getApiKeyFromManifest(context,
+                        StorageHelpers.FABRIC_API_KEY_KEY));
+
+        Task<AuthResult> exchangeTask = firebaseAuth.signInWithCustomToken(
+                storageHelpers.getUnsignedJWT(builder.build().getPayload()));
+
+        return cleanupDigitsSession
+                ? exchangeTask.continueWithTask(new ClearSessionContinuation(storageHelpers))
+                : exchangeTask;
+    }
+
+    /**
+     * Migrates a user token from the Digits SDK, making that user the current user
+     * in the new Firebase SDK. This method can be used by apps that have tokens they wish to
+     * exchange. To exchange the default tokens found on the client, use {@link #migrate(boolean)}
+     * <p>
+     * This works as follows:
+     * <ol><li>Sends the legacy token and keys provided by the caller in the
+     * {@link RedeemableDigitsSessionBuilder} to a Firebase server to exchange it for a new
+     * Firebase auth token.</li>
+     * <li>Uses the new auth token to log in the user.</li>
+     * </ol>
+     * <p>
+     * If a user is already logged in with the new Firebase SDK, the logged in user will not be
+     * affected.
+     * <p>
+     *
+     * @param builder containing redeemable exchange info. Non optional parameters in the builder:
+     *                (consumerKey, consumerSecret, fabricApiKey, authToken, authTokenSecret)
+     * @return task representing the token exchange process. Apps can listen to the status of the
+     * returned task using {@link Task#addOnCompleteListener(Activity, OnCompleteListener)}.
+     * The task succeeds in all of the following situations:
+     * <ol><li>Session was successfuly exchanged</li>
+     * </ol>
+     * The task fails when:
+     * <ol><li>The server was unable to validate the token provided</li>
+     * <li>The server failed for internal reasons</li>
+     * </ol>
+     */
+    public Task<AuthResult> migrate(RedeemableDigitsSessionBuilder builder) {
+        return firebaseAuth.signInWithCustomToken(
+                storageHelpers.getUnsignedJWT(builder.build().getPayload()));
+    }
+
+    private Task<AuthResult> cleanupAndCreateEmptyResult(boolean cleanupDigitsSession) {
+        Task<AuthResult> emptyResult = Tasks.forResult((AuthResult) new MigratorAuthResult(null));
+        return cleanupDigitsSession
+                ? emptyResult.continueWithTask(new ClearSessionContinuation(storageHelpers))
+                : emptyResult;
     }
 
     /**
@@ -183,37 +248,10 @@ public final class AuthMigrator {
         storageHelpers.clearDigitsSession();
     }
 
-    private AuthMigrator(FirebaseApp app, StorageHelpers storageHelper, FirebaseAuth firebaseAuth) {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    AuthMigrator(FirebaseApp app, StorageHelpers storageHelper, FirebaseAuth firebaseAuth) {
         this.app = app;
         this.storageHelpers = storageHelper;
         this.firebaseAuth = firebaseAuth;
-    }
-
-    private Task<AuthResult> migrate(@NonNull String sessionJson) {
-        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
-
-        // If there's already a current user, don't migrate and clear the legacy token.
-        if (currentUser != null) {
-            storageHelpers.clearDigitsSession();
-            return Tasks.forResult((AuthResult) new MigratorAuthResult(currentUser));
-        }
-
-        final Context context = app.getApplicationContext();
-
-        final RedeemableDigitsSessionBuilder builder;
-        try {
-            builder = RedeemableDigitsSessionBuilder.fromSessionJson(sessionJson).setConsumerKey
-                    (storageHelpers.getApiKeyFromManifest(context, StorageHelpers
-                            .DIGITS_CONSUMER_KEY_KEY)).setConsumerSecret(storageHelpers
-                    .getApiKeyFromManifest(context, StorageHelpers.DIGITS_CONSUMER_SECRET_KEY))
-                    .setFabricApiKey(storageHelpers.getApiKeyFromManifest(context, StorageHelpers
-                            .FABRIC_API_KEY_KEY));
-        } catch (JSONException e) {
-            //invalid session
-            storageHelpers.clearDigitsSession();
-            return Tasks.forResult((AuthResult) new MigratorAuthResult(null));
-        }
-
-        return migrate(builder);
     }
 }

@@ -32,6 +32,9 @@ import org.robolectric.annotation.Config;
 public class RedeemableDigitsSessionBuilderTest {
 
     private static final long DIGITS_ID = 112L;
+    private static final String FABRIC_API_KEY = "abcdefabcdefabcdefabcdefabcdefabcdefabcd";
+    private static final String CONSUMER_KEY = "abcdefabcdefabcdefabcdefabcdefabcdefabcd";
+    private static final String CONSUMER_SECRET = "abcdefabcdefabcdefabcdefabcdefabcdefabcd";
     private static final String EMAIL = "a@b.com";
     private static final boolean IS_EMAIL_VERIFIED = false;
     private static final String AUTH_TOKEN = "auth_token";
@@ -46,7 +49,10 @@ public class RedeemableDigitsSessionBuilderTest {
     @Test
     public void testFromSessionJson_allFields() throws JSONException {
         RedeemableDigitsSessionBuilder builder =
-                RedeemableDigitsSessionBuilder.fromSessionJson(VALID_DIGITS_SESSION);
+                RedeemableDigitsSessionBuilder.fromSessionJson(VALID_DIGITS_SESSION)
+                        .setConsumerKey(CONSUMER_KEY)
+                        .setConsumerSecret(CONSUMER_SECRET)
+                        .setFabricApiKey(FABRIC_API_KEY);
         JSONObject jsonObject = builder.build().getPayload();
 
         assertEquals(DIGITS_ID, jsonObject.getLong("id"));
@@ -58,9 +64,12 @@ public class RedeemableDigitsSessionBuilderTest {
     }
 
     @Test
-    public void testFromSessionJson_withNullFields() throws JSONException {
+    public void testFromSessionJson_withNullableFields() throws JSONException {
         RedeemableDigitsSessionBuilder builder =
-                RedeemableDigitsSessionBuilder.fromSessionJson("{}");
+                RedeemableDigitsSessionBuilder.fromSessionJson("{}")
+                        .setConsumerKey(CONSUMER_KEY)
+                        .setConsumerSecret(CONSUMER_SECRET)
+                        .setFabricApiKey(FABRIC_API_KEY);
         JSONObject jsonObject = builder.build().getPayload();
 
         assertTrue(jsonObject.isNull("id"));
@@ -74,5 +83,26 @@ public class RedeemableDigitsSessionBuilderTest {
     @Test(expected=JSONException.class)
     public void testInvalidFromDigitsSessionJson() throws JSONException {
         RedeemableDigitsSessionBuilder.fromSessionJson("invalid_json");
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void testNoConsumerKey() throws JSONException {
+        RedeemableDigitsSessionBuilder.fromSessionJson(VALID_DIGITS_SESSION)
+                .setConsumerSecret("")
+                .setFabricApiKey(FABRIC_API_KEY).build();
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void testNoConsumerSecret() throws JSONException {
+        RedeemableDigitsSessionBuilder.fromSessionJson(VALID_DIGITS_SESSION)
+                .setConsumerKey("")
+                .setFabricApiKey(FABRIC_API_KEY).build();
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void testNoFabricApiKey() throws JSONException {
+        RedeemableDigitsSessionBuilder.fromSessionJson(VALID_DIGITS_SESSION)
+                .setConsumerKey("")
+                .setConsumerSecret("").build();
     }
 }

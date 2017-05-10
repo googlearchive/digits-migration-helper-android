@@ -14,97 +14,73 @@
 
 package com.migrantdigitsapplication.digits;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.Toast;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+
+import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import migration.auth.digits.google.com.digitsmigrationhelpers.AuthMigrator;
-import migration.auth.digits.google.com.migrantdigitsapplication.R;
 
 public class MainActivity extends AppCompatActivity {
-    private Button upgradeCustomTokenButton;
-    private Button upgradeDefaultSessionButton;
-    private EditText digitsAuthTokenEditText;
-    private EditText digitsAuthTokenSecretEditText;
-    private FirebaseAuth mAuth;
-    private FirebaseAuth.AuthStateListener mAuthListener;
-    private String TAG = "DigitsMigration";
     private AuthMigrator migrator;
+    private Task<AuthResult> digitsMigratorTask;
+    private static final int RC_SIGN_IN = 123;
+    private static final String TAG = MainActivity.class.toString();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        mAuth = FirebaseAuth.getInstance();
-        migrator = AuthMigrator.getInstance();
-
-        digitsAuthTokenEditText = (EditText) findViewById(R.id.digits_auth_token_edit_text);
-        digitsAuthTokenSecretEditText = (EditText) findViewById(R.id.digits_auth_token_secret_edit_text);
-        upgradeCustomTokenButton = (Button) findViewById(R.id.set_digits_session_button);
-        upgradeDefaultSessionButton = (Button)findViewById(R.id.upgrade_digits_session_nutton);
-
-        setupUpgradeCustomTokenButton();
-        setupUpgradeDefaultSessionButton();
-        setupFirebaseAuthListener();
-    }
-
-    private void setupFirebaseAuthListener() {
-        mAuthListener = new FirebaseAuth.AuthStateListener() {
+        digitsMigratorTask = MigrantDigitsApplication.get(this).getDigitsMigratorTask();
+        digitsMigratorTask.addOnSuccessListener(this, new OnSuccessListener<AuthResult>() {
             @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                FirebaseUser user = firebaseAuth.getCurrentUser();
-                if (user != null) {
-                    // User is signed in
-                    Toast.makeText(getApplicationContext(),
-                            "onAuthStateChanged:signed_in:" + user.getUid(), Toast.LENGTH_LONG)
-                            .show();
+            public void onSuccess(AuthResult authResult) {
+                if (authResult.getUser() != null) {
+                    // Either a user was already logged in or token exchange succeeded
+                    startLoggedInUX();
                 } else {
-                    // User is signed out
-                    Toast.makeText(getApplicationContext(),
-                            "onAuthStateChanged:signed_out", Toast.LENGTH_LONG).show();
+                    // No tokens were found to exchange and no firebase user logged in.
+                    startLoginWithFirebaseUI();
                 }
             }
-        };
-    }
-
-    private void setupUpgradeDefaultSessionButton() {
-        if(migrator.hasLegacyAuth()) {
-            upgradeDefaultSessionButton.setEnabled(true);
-        } else {
-            upgradeDefaultSessionButton.setEnabled(false);
-        }
-
-        upgradeDefaultSessionButton.setOnClickListener(
-                new UpgradeDefaultSessionButtonListener(migrator));
-    }
-
-    private void setupUpgradeCustomTokenButton() {
-        upgradeCustomTokenButton.setOnClickListener(
-                new UpgradeCustomTokenButtonListener(
-                        this,
-                        migrator,
-                        digitsAuthTokenEditText,
-                        digitsAuthTokenSecretEditText
-                )
-        );
+        }).addOnFailureListener(this, new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                // Error migrating digits token
+                startLoginWithFirebaseUI();
+            }
+        });
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-        mAuth.addAuthStateListener(mAuthListener);
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(resultCode == RC_SIGN_IN) {
+            Toast.makeText(this, "Signed in using firebae ui", Toast.LENGTH_LONG);
+            startLoggedInUX();
+        }
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        if (mAuthListener != null) {
-            mAuth.removeAuthStateListener(mAuthListener);
-        }
+    private void startLoggedInUX() {
+        Intent intent = new Intent(this, LoggedInActivity.class);
+        startActivity(intent);
+    }
+
+    private void startLoginWithFirebaseUI() {
+        List<AuthUI.IdpConfig> providers = new ArrayList<>();
+        providers.add(new AuthUI.IdpConfig.Builder(AuthUI.PHONE_VERIFICATION_PROVIDER).build());
+        startActivityForResult(AuthUI.getInstance()
+                .createSignInIntentBuilder()
+                .setAvailableProviders(providers)
+                .build(), RC_SIGN_IN);
     }
 }
