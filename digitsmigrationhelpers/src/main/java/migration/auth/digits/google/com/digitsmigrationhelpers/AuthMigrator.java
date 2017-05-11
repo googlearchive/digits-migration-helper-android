@@ -164,7 +164,7 @@ public final class AuthMigrator {
             return cleanupAndCreateEmptyResult(cleanupDigitsSession);
         }
 
-        Log.d(TAG, "Found digits session");
+        Log.d(TAG, "Exchanging digits session");
 
         // If session is invalid, return
         try {

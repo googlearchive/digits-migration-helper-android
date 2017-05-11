@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
@@ -46,6 +47,9 @@ public class MainActivity extends AppCompatActivity {
             public void onSuccess(AuthResult authResult) {
                 if (authResult.getUser() != null) {
                     // Either a user was already logged in or token exchange succeeded
+                    Log.d("MyApp", "Digits id preserved:" + authResult.getUser().getUid());
+                    Log.d("MyApp", "Digits Phone number preserved"
+                            + authResult.getUser().getPhoneNumber());
                     startLoggedInUX();
                 } else {
                     // No tokens were found to exchange and no firebase user logged in.
