@@ -16,7 +16,6 @@ package migration.auth.digits.google.com.digitsmigrationhelpers;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.VisibleForTesting;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -141,7 +140,7 @@ public class RedeemableDigitsSessionBuilder {
      * @param consumerKey consumer key issued to identify the app
      * @return builder
      */
-    public RedeemableDigitsSessionBuilder setConsumerKey(@NonNull String consumerKey) {
+    public RedeemableDigitsSessionBuilder setConsumerKey(@Nullable String consumerKey) {
         this.consumerKey = consumerKey;
         return this;
     }
@@ -152,7 +151,7 @@ public class RedeemableDigitsSessionBuilder {
      * @param consumerSecret consumer secret issued to authenticate the app
      * @return builder
      */
-    public RedeemableDigitsSessionBuilder setConsumerSecret(@NonNull String consumerSecret) {
+    public RedeemableDigitsSessionBuilder setConsumerSecret(@Nullable String consumerSecret) {
         this.consumerSecret = consumerSecret;
         return this;
     }
@@ -163,7 +162,7 @@ public class RedeemableDigitsSessionBuilder {
      * @param fabricApiKey fabric api key
      * @return builder
      */
-    public RedeemableDigitsSessionBuilder setFabricApiKey(@NonNull String fabricApiKey) {
+    public RedeemableDigitsSessionBuilder setFabricApiKey(@Nullable String fabricApiKey) {
         this.fabricApiKey = fabricApiKey;
         return this;
     }
@@ -267,11 +266,9 @@ public class RedeemableDigitsSessionBuilder {
         return reference;
     }
 
-    public static boolean isValidApiKeyFormat(@NonNull String apiKey) {
-        if (apiKey == null) {
-            return false;
-        }
-
-        return apiKey.length() == 40 && Pattern.compile("[0-9a-f]+").matcher(apiKey).matches();
+    private static boolean isValidApiKeyFormat(String apiKey) {
+        return apiKey != null
+                && apiKey.length() == 40
+                && Pattern.compile("[0-9a-f]+").matcher(apiKey).matches();
     }
 }

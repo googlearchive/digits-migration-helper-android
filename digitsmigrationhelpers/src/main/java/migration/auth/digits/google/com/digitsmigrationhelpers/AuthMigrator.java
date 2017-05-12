@@ -18,14 +18,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.VisibleForTesting;
-import android.text.TextUtils;
 import android.util.Log;
 
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.digits.auth.migration.internal.ClearSessionContinuation;
-import com.google.digits.auth.migration.internal.MigratorAuthResult;
 import com.google.digits.auth.migration.internal.StorageHelpers;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthResult;
@@ -36,23 +35,49 @@ import org.json.JSONException;
 
 import java.util.WeakHashMap;
 
+import static android.support.annotation.VisibleForTesting.PRIVATE;
+
 /**
  * Helper to exchange a tokens issued by the Digits SDK for a user in the new
  * Firebase SDK. See examples on github for usage.
  */
 public final class AuthMigrator {
+    @NonNull
     private static final WeakHashMap<FirebaseApp, AuthMigrator> instances = new WeakHashMap<>();
-    private final StorageHelpers storageHelpers;
-    private final FirebaseAuth firebaseAuth;
-    private final FirebaseApp app;
-    private static String TAG = "DigitsAuthMigrator";
+    @NonNull
+    private final StorageHelpers mStorageHelpers;
+    @NonNull
+    private final FirebaseAuth mFirebaseAuth;
+    @NonNull
+    private final FirebaseApp mApp;
+    @NonNull
+    private final ClearSessionContinuation mClearSessionContinuation;
+    @NonNull
+    private static final Task<Void> VOID_TASK = Tasks.forResult(null);
+    @NonNull
+    private static final Continuation<AuthResult, Task<Void>> VOID_CONTINUATION =
+            new Continuation<AuthResult, Task<Void>> () {
+                @Override
+                public Task<Void> then(@NonNull Task<AuthResult> task) throws Exception {
+                    if(task.isSuccessful()) {
+                        return VOID_TASK;
+                    }
+                    try {
+                        throw task.getException();
+                    } catch (Exception e) {
+                        return Tasks.forException(e);
+                    }
+                }
+    };
+
+    private static final String TAG = "DigitsAuthMigrator";
 
     /**
      * Gets an instance of {@link AuthMigrator}
      *
-     * @param app Firebase app instance used to construct authMigrator. Use {@link #getInstance}
-     *            to create using the default app.
-     * @return AuthMigrator for the firebase app
+     * @param app Firebase mApp instance used to construct authMigrator.
+     *            Use {@link #getInstance(FirebaseApp)} to create using the default mApp.
+     * @return AuthMigrator for the firebase mApp
      */
     public static AuthMigrator getInstance(FirebaseApp app) {
         synchronized (instances) {
@@ -67,10 +92,10 @@ public final class AuthMigrator {
     }
 
     /**
-     * Gets an instance of the {@link AuthMigrator} with the app returned by
+     * Gets an instance of the {@link AuthMigrator} with the mApp returned by
      * {@link FirebaseApp#getInstance()}
      *
-     * @return AuthMigrator for default app
+     * @return AuthMigrator for default mApp
      */
     public static AuthMigrator getInstance() {
         return getInstance(FirebaseApp.getInstance());
@@ -80,10 +105,10 @@ public final class AuthMigrator {
     /**
      * gets the {@link FirebaseApp} for this {@link AuthMigrator} instance
      *
-     * @return app
+     * @return mApp
      */
     public FirebaseApp getApp() {
-        return app;
+        return mApp;
     }
 
     /**
@@ -93,15 +118,16 @@ public final class AuthMigrator {
      * <ol> <li>If a user is already logged in with the new Firebase SDK, then the legacy auth token
      * will be (optionally) removed, but the logged in user will not be affected</li>
      * <li>Looks up the legacy digits auth token.</li>
-     * <li>Looks for the following keys in the app manifest: "io.fabric.ApiKey",
-     * "com.digits.sdk.android.ConsumerKey", "com.digits.sdk.android.ConsumerSecret"</li>
+     * <li>Looks for the following keys in the mApp' s AndroidManifest.xml:
+     * <ol><li type="circle">"io.fabric.ApiKey"</li>
+     *     <li type="circle">"com.digits.sdk.android.ConsumerKey"</li>
+     *     <li type="circle">"com.digits.sdk.android.ConsumerSecret"</li>
+     * </ol></li>
      * <li>Sends the legacy token and  keys to a Firebase server to exchange it for a new
      * Firebase auth token.</li>
      * <li>Uses the new auth token to log in the user.</li>
-     * <li>Removes the legacy digits auth token from the device.</li></ol>
-     * <p>
-     * If the Firebase server determines that the legacy auth token is invalid, it will be
-     * removed from the device and the user will not be logged in.
+     * <li>If the Firebase server determines that the legacy auth token is invalid, it will be
+     * (optionally) removed from the device and the user will not be logged in.</li></ol>
      * Sample:
      * <pre>
      * <code>AuthMigrator.getInstance().migrate().addOnCompleteListener(new{@code
@@ -109,19 +135,18 @@ public final class AuthMigrator {
      *    {@literal @}Override
      *     public void onComplete({@code Task<AuthResult>}task) {
      *          if (task.isSuccessful()) {
-     *              if (task.getResult().getUser() != null) {
-     *                  String preservedDigitsPhoneNumber = task.getResult().getUser()
-     *                      .getPhoneNumber();
-     *                  String preservedDigitsId = task.getResult().getUser().getUid();
-     *                  Log.d("Digits", "Preserved Phone Number" + preservedDigitsPhoneNumber);
-     *                  Log.d("Digits", "Preserved User Id" + preservedDigitsId);
+     *              FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+     *              if (u != null) {
+     *                  // Either a user was already logged in or token exchange succeeded
+     *                  Log.d("Digits", "Preserved Phone Number" + u.getPhoneNumber());
+     *                  Log.d("Digits", "Preserved User Id" + u.getUid());
      *              } else {
-     *                  //No valid digits session was found
+     *                  // No valid digits session was found
      *                  Log.d("Digits", "No valid legacy digits session found");
      *              }
      *          } else {
      *              //an error accured
-     *              Log.d("Digits", "Error while upgrading digits session: " + task.getException()
+     *              Log.d("Digits", "Error upgrading digits session: " + task.getException()
      *                  .getLocalizedMessage());
      *          }
      *     }
@@ -137,25 +162,22 @@ public final class AuthMigrator {
      * token</li>
      * </ol>
      * The task fails only when digits token was found and:
-     * <ol><li>The server was unable to validate it. The corrupt session is automatically cleared</li>
+     * <ol><li>The server was unable to validate it. The corrupt session is automatically
+     * (optionally) cleared</li>
      * <li>The server failed for internal reasons. The legacy session is retained to permit
-     * retries initiated from the app</li>
+     * retries initiated from the mApp</li>
      * </ol>
      */
-    public Task<AuthResult> migrate(boolean cleanupDigitsSession) {
-        final FirebaseUser currentUser = firebaseAuth.getCurrentUser();
-        final String sessionJson = storageHelpers.getDigitsSessionJson();
-        final Context context = app.getApplicationContext();
+    public Task<Void> migrate(boolean cleanupDigitsSession) {
+        final FirebaseUser currentUser = mFirebaseAuth.getCurrentUser();
+        final String sessionJson = mStorageHelpers.getDigitsSessionJson();
+        final Context context = mApp.getApplicationContext();
         final RedeemableDigitsSessionBuilder builder;
 
         // If there's already a current user, don't migrate and clear the legacy token.
         if (currentUser != null) {
             Log.d(TAG, "Found existing firebase session. Skipping Exchange.");
-            if(cleanupDigitsSession) {
-                Log.d(TAG, "Clearning legacy session");
-                storageHelpers.clearDigitsSession();
-            }
-            return Tasks.forResult((AuthResult) new MigratorAuthResult(currentUser));
+            return cleanupAndCreateEmptyResult(cleanupDigitsSession);
         }
 
         // If no legacy session found, return
@@ -175,18 +197,19 @@ public final class AuthMigrator {
             return cleanupAndCreateEmptyResult(cleanupDigitsSession);
         }
 
-        builder.setConsumerKey(storageHelpers.getApiKeyFromManifest(context,
+        builder.setConsumerKey(mStorageHelpers.getApiKeyFromManifest(context,
                         StorageHelpers.DIGITS_CONSUMER_KEY_KEY))
-                .setConsumerSecret(storageHelpers.getApiKeyFromManifest(context,
+                .setConsumerSecret(mStorageHelpers.getApiKeyFromManifest(context,
                         StorageHelpers.DIGITS_CONSUMER_SECRET_KEY))
-                .setFabricApiKey(storageHelpers.getApiKeyFromManifest(context,
+                .setFabricApiKey(mStorageHelpers.getApiKeyFromManifest(context,
                         StorageHelpers.FABRIC_API_KEY_KEY));
 
-        Task<AuthResult> exchangeTask = firebaseAuth.signInWithCustomToken(
-                storageHelpers.getUnsignedJWT(builder.build().getPayload()));
+        Task<Void> exchangeTask = mFirebaseAuth.signInWithCustomToken(
+                mStorageHelpers.getUnsignedJWT(builder.build().getPayload()))
+                .continueWithTask(VOID_CONTINUATION);
 
         return cleanupDigitsSession
-                ? exchangeTask.continueWithTask(new ClearSessionContinuation(storageHelpers))
+                ? exchangeTask.continueWithTask(mClearSessionContinuation)
                 : exchangeTask;
     }
 
@@ -218,40 +241,44 @@ public final class AuthMigrator {
      * <li>The server failed for internal reasons</li>
      * </ol>
      */
-    public Task<AuthResult> migrate(RedeemableDigitsSessionBuilder builder) {
-        return firebaseAuth.signInWithCustomToken(
-                storageHelpers.getUnsignedJWT(builder.build().getPayload()));
+    public Task<Void> migrate(@NonNull RedeemableDigitsSessionBuilder builder) {
+        return mFirebaseAuth.signInWithCustomToken(
+                mStorageHelpers.getUnsignedJWT(builder.build().getPayload()))
+                .continueWithTask(VOID_CONTINUATION);
     }
 
-    private Task<AuthResult> cleanupAndCreateEmptyResult(boolean cleanupDigitsSession) {
-        Task<AuthResult> emptyResult = Tasks.forResult((AuthResult) new MigratorAuthResult(null));
-        return cleanupDigitsSession
-                ? emptyResult.continueWithTask(new ClearSessionContinuation(storageHelpers))
-                : emptyResult;
+    private Task<Void> cleanupAndCreateEmptyResult(boolean cleanupDigitsSession) {
+        if(cleanupDigitsSession) {
+            Log.d(TAG, "Clearing legacy session");
+            mStorageHelpers.clearDigitsSession();
+        }
+        return VOID_TASK;
     }
 
     /**
      * Checks whether an auth token from the legacy SDK exists.  Uses the FirebaseApp's name
-     * (or 'default' for the default app) as the persistence key.
+     * (or 'default' for the default mApp) as the persistence key.
      *
      * @return does the client contain a legacy digits token
      */
     public boolean hasLegacyAuth() {
-        return storageHelpers.hasDigitsSession();
+        return mStorageHelpers.hasDigitsSession();
     }
 
     /**
      * Clears the auth token from the legacy SDK.  Uses the FirebaseApp's name (or 'default' for
-     * the default app) as the persistence key.
+     * the default mApp) as the persistence key.
      */
     public void clearLegacyAuth() {
-        storageHelpers.clearDigitsSession();
+        mStorageHelpers.clearDigitsSession();
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    AuthMigrator(FirebaseApp app, StorageHelpers storageHelper, FirebaseAuth firebaseAuth) {
-        this.app = app;
-        this.storageHelpers = storageHelper;
-        this.firebaseAuth = firebaseAuth;
+    @VisibleForTesting(otherwise = PRIVATE)
+    AuthMigrator(@NonNull FirebaseApp app, @NonNull StorageHelpers storageHelper,
+                 @NonNull FirebaseAuth firebaseAuth) {
+        mApp = app;
+        mStorageHelpers = storageHelper;
+        mFirebaseAuth = firebaseAuth;
+        mClearSessionContinuation = new ClearSessionContinuation(mStorageHelpers);
     }
 }

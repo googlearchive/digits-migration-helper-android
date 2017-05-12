@@ -25,36 +25,37 @@ import org.json.JSONObject;
 public class RedeemableDigitsSession {
 
     @NonNull
-    final String authToken;
+    private final String authToken;
 
     @NonNull
-    final String authTokenSecret;
+    private final String authTokenSecret;
 
     @NonNull
-    final String phoneNumber;
+    private final String consumerKey;
 
     @NonNull
-    final Long id;
+    private final String consumerSecret;
+
+    @NonNull
+    private final String fabricApiKey;
 
     @Nullable
-    final String email;
+    private final String email;
 
     @Nullable
-    final Boolean isEmailVerified;
+    private final Boolean isEmailVerified;
 
     @Nullable
-    final String consumerKey;
+    private final String phoneNumber;
 
     @Nullable
-    final String consumerSecret;
+    private final Long id;
 
-    @Nullable
-    final String fabricApiKey;
-
-    public RedeemableDigitsSession(Long id, @NonNull String phoneNumber, String email,
-                                   Boolean isEmailVerified, @NonNull String authToken,
-                                   @NonNull String authTokenSecret, String consumerKey,
-                                   String consumerSecret, String fabricApiKey) {
+    public RedeemableDigitsSession(@Nullable Long id, @Nullable String phoneNumber,
+                                   @Nullable String email, @Nullable Boolean isEmailVerified,
+                                   @NonNull String authToken, @NonNull String authTokenSecret,
+                                   @NonNull String consumerKey, @NonNull String consumerSecret,
+                                   @NonNull String fabricApiKey) {
         this.id = id;
         this.phoneNumber = phoneNumber;
         this.email = email;

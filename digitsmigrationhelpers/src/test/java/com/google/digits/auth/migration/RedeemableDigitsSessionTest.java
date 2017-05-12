@@ -61,19 +61,19 @@ public class RedeemableDigitsSessionTest {
     @Test
     public void testInstancesTokenWithNullValues() throws Exception {
         RedeemableDigitsSession session =
-                new RedeemableDigitsSession(DIGITS_ID, PHONE_NUMBER, EMAIL,
+                new RedeemableDigitsSession(null, null, EMAIL,
                         IS_EMAIL_VERIFIED, AUTH_TOKEN, AUTH_TOKEN_SECRET, CONSUMER_KEY,
-                        null, null);
+                        CONSUMER_SECRET, FABRIC_API_KEY);
 
         JSONObject jsonObject = session.getPayload();
-        assertEquals(DIGITS_ID, jsonObject.getLong("id"));
-        assertEquals(PHONE_NUMBER, jsonObject.getString("phone_number"));
         assertEquals(EMAIL, jsonObject.getString("email_address"));
         assertEquals(IS_EMAIL_VERIFIED, jsonObject.getBoolean("is_email_verified"));
         assertEquals(AUTH_TOKEN, jsonObject.getString("auth_token"));
         assertEquals(AUTH_TOKEN_SECRET, jsonObject.getString("auth_token_secret"));
         assertEquals(CONSUMER_KEY, jsonObject.getString("app_consumer_key"));
-        assertTrue(jsonObject.isNull("app_consumer_secret"));
-        assertTrue(jsonObject.isNull("fabric_api_key"));
+        assertEquals(CONSUMER_SECRET, jsonObject.getString("app_consumer_secret"));
+        assertEquals(FABRIC_API_KEY, jsonObject.getString("fabric_api_key"));
+        assertTrue(jsonObject.isNull("id"));
+        assertTrue(jsonObject.isNull("phone_number"));
     }
 }

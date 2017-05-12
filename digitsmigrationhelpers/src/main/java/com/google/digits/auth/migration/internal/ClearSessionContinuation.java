@@ -20,12 +20,11 @@ import android.util.Log;
 
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
 
 import static android.content.ContentValues.TAG;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-public class ClearSessionContinuation implements Continuation<AuthResult, Task<AuthResult>> {
+public class ClearSessionContinuation implements Continuation<Void, Task<Void>> {
 
     private final StorageHelpers storageHelpers;
 
@@ -34,13 +33,14 @@ public class ClearSessionContinuation implements Continuation<AuthResult, Task<A
     }
 
     @Override
-    public Task<AuthResult> then(@NonNull Task<AuthResult> task) throws Exception {
+    public Task<Void> then(@NonNull Task<Void> task) throws Exception {
         if (!task.isSuccessful()) {
             try {
                 throw task.getException();
             } catch (FirebaseWebRequestException e) {
                 if (e.getHttpStatusCode() == 400 || e.getHttpStatusCode() == 403) {
-                    Log.d(TAG, "Digits session deemed invalid by server. Clearing...");
+                    Log.d(TAG, "Digits session deemed invalid by server");
+                    Log.d(TAG, "Clearing legacy session");
                     // Permanent errors should clear the persistence key.
                     storageHelpers.clearDigitsSession();
                 }

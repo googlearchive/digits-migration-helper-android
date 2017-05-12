@@ -15,73 +15,81 @@ This guide provides instructions on how to integrate and test this sdk.
 
 #### Integration
 1. Add the following to your app module's build.gradle:
-```groovy
-compile 'com.google.firebase:firebase-auth:11.0.0'
-compile 'com.firebase:digitsmigrationhelpers:0.1.3'
-```
+  ```groovy
+  compile 'com.google.firebase:firebase-auth:11.0.0'
+  compile 'com.firebase:digitsmigrationhelpers:0.1.0'
+  ```
 2. To your AndroidManifest.xml, add the following entries
-```xml
-        <meta-data
-            android:name="io.fabric.ApiKey"
-            android:value="YOUR_FABRIC_API_KEY"
-            tools:replace="android:value"/>
-        <meta-data
-            android:name="com.digits.sdk.android.ConsumerKey"
-            android:value="YOUR_DIGITS_CONSUMER_KEY"/>
-        <meta-data
-            android:name="com.digits.sdk.android.ConsumerSecret"
-            android:value="YOUR_DIGITS_CONSUMER_SECRET"/>
-```
+  ```xml
+          <!--You may already have io.fabric.ApiKey entry. Continue using it -->
+          <meta-data
+              android:name="io.fabric.ApiKey"
+              android:value="YOUR_FABRIC_API_KEY"
+              tools:replace="android:value"/>
+          <meta-data
+              android:name="com.digits.sdk.android.ConsumerKey"
+              android:value="YOUR_DIGITS_CONSUMER_KEY"/>
+          <meta-data
+              android:name="com.digits.sdk.android.ConsumerSecret"
+              android:value="YOUR_DIGITS_CONSUMER_SECRET"/>
+  ```
 3. In your Android Application class' s `onCreate()` or Activity's `onCreate()` override, call the migrator's `migrate()` method to seamlessly exchange the default digits session found on the device.
 
-```java
-AuthMigrator.getInstance().migrate(!BuildConfig.DEBUG)
-.addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-        @Override
-        public void onComplete(@NonNull Task<AuthResult> task) {
-            if (task.isSuccessful()) {
-                if (task.getResult().getUser() != null) {
-                    // Either your existing user remains logged in
-                    // or a FirebaseUser was created from your digits Auth state.
-                    Log.d("MyApp", "Digits id preserved:" 
-                      + authResult.getUser().getUid());
-                    Log.d("MyApp", "Digits Phone number preserved: " 
-                      + authResult.getUser().getPhoneNumber());
-                } else {
-                    //No valid digits session was found
-                }
-            } else {
-                // An error occurred in attempting to migrate the session
-            }
-        }
-});
-```
-**Our sample app shows how the token exchange can be done on app launch in a way that is transparent to the end user. As a best practice, we integrate with [Firebase UI](https://github.com/firebase/FirebaseUI-Android) to authenticate users that do not have digits tokens**.
- 
+  ```java
+  // By passing in !BuildConfig.DEBUG, we set the cleanupDigitsSession arg to true 
+  // only in debug builds. This way, the digits session is retained in debug 
+  // builds to simplify testing. In all other builds, the  token will be deleted.
+  AuthMigrator.getInstance().migrate(!BuildConfig.DEBUG)
+  .addOnCompleteListener(new OnCompleteListener<Void>() {
+          @Override
+          public void onComplete(@NonNull Task<Void> task) {
+              if (task.isSuccessful()) {
+                  FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+                  if (u != null) {
+                      // Either your existing user remains logged in
+                      // or a FirebaseUser was created from your digits Auth state.
+                      Log.d("MyApp", "Digits id preserved:" + u.getUid());
+                      Log.d("MyApp", "Digits Phone number preserved: " + u.getPhoneNumber());
+                  } else {
+                      //No valid digits session was found
+                  }
+              } else {
+                  // An error occurred in attempting to migrate the session
+              }
+          }
+  });
+  ```
+**Our sample app shows how the token exchange can be done on app launch in a way that is transparent to the end user. As a best practice, we integrate with [Firebase UI](https://github.com/firebase/FirebaseUI-Android) to authenticate new and existing users that do not have digits tokens**.
+
+4. If you use Digits' [OAuth Echo](https://docs.fabric.io/android/digits/advanced-setup.html) to authenticate clients, while your clients are updating to the latest version of your app, you will need to support both OAuth Echo and [Firebase Token Verification](https://firebase.google.com/docs/auth/admin/verify-id-tokens) on your backend servers. You will be able to verify your legacy digits user’s accounts via the https://api.digits.com/1.1/sdk/account.json endpoints until September 30 2017, when the Digits service shuts down. After the Digits service shuts down, you can remove support for the OAuth Echo verification.
+
 #### Testing
 Before the digits sdk can be removed with confidence from your app, we need to simulate a user logged into your app using digits sdk that needs to be migrated to the new firebase sdk.
-1. Sign in using the digits sdk flow in your app. This helps simulate an existing user who has signed into Digits in your published app. Our test is to ensure that the user id and phone number of this user are preserved without requiring the user to re-login.
-2. Next, complete the [integration](#integration) as shown above. Once the success callbacks have been invoked, you should be able to verify that the firebase user was created using the same id and phone number without requiring any intervention.
-In addition, the following logs can be used to verify
-```bash
-$ adb logcat | grep -i "DigitsAuthMigrator\|MyApp"
 
-05-11 16:14:38.322  3593  3593 D DigitsAuthMigrator: Exchanging digits session
-05-11 16:14:40.718  3593  3593 D MyApp   : Digits id preserved:8215196027230
-05-11 16:14:40.718  3593  3593 D MyApp   : Digits Phone number preserved+14148981327
+1. Sign in using the digits sdk flow into your app. This helps simulate an existing user who has signed in using Digits in your published app. Our test asserts that the user id and phone number of this user are preserved without requiring the user to re-login.
+2. Next, complete the [integration](#integration) as shown above. Once the success callbacks have been invoked, you should be able to verify that the firebase user created in the flow preserves the phone number and id of the digits user from step1. 
 
-```
-3. In addition, if your integration in in your Application's `onCreate()` override, restart your app to make sure that repeated invocations of `migrate` are no-ops.
-```bash
-$ adb logcat | grep -i "DigitsAuthMigrator\|MyApp"
+  The following logs can also be used to verify
+  ```bash
+  $ adb logcat | grep -i "DigitsAuthMigrator\|MyApp"
+  
+  05-11 16:14:38.322  3593  3593 D DigitsAuthMigrator: Exchanging digits session
+  05-11 16:14:40.718  3593  3593 D MyApp   : Digits id preserved:8215196027230
+  05-11 16:14:40.718  3593  3593 D MyApp   : Digits Phone number preserved+14148981327
+  
+  ```
+  
+  In addition, if your integration in in your Application's `onCreate()` override, restart your app to make sure that repeated invocations of `migrate` are no-ops.
+  
+  ```bash
+  $ adb logcat | grep -i "DigitsAuthMigrator\|MyApp"
+  
+  05-11 16:21:43.347  9129  9129 D DigitsAuthMigrator: Found existing firebase session. Skipping Exchange.
+  05-11 16:21:43.504  9129  9129 D MyApp   : Digits id preserved:8215196027230
+  05-11 16:21:43.504  9129  9129 D MyApp   : Digits Phone number preserved+14148981327
+  ```
 
-05-11 16:21:43.347  9129  9129 D DigitsAuthMigrator: Found existing firebase session. Skipping Exchange.
-05-11 16:21:43.504  9129  9129 D MyApp   : Digits id preserved:821519602702090240
-05-11 16:21:43.504  9129  9129 D MyApp   : Digits Phone number preserved+14349873237
-```
-Note: The `migrate()` method accepts an argument to delete a digits session after the exchange completes. By setting this value to `migrate(!BuildConfig.DEBUG)`, we retain the digits token to facilitate testing in debug builds. In all other builds, the token will be deleted.
-
-At this point, it is safe to remove the digits sdk dependency from your app.
+Once you have tested your integration, it is completely safe to remove the digits dependency from your Android app.
 
 ## Support
 

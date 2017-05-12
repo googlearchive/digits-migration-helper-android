@@ -14,69 +14,97 @@
 
 package com.migrantdigitsapplication.digits;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import migration.auth.digits.google.com.digitsmigrationhelpers.AuthMigrator;
+import migration.auth.digits.google.com.migrantdigitsapplication.R;
 
-public class MainActivity extends AppCompatActivity {
-    private AuthMigrator migrator;
-    private Task<AuthResult> digitsMigratorTask;
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int RC_SIGN_IN = 123;
-    private static final String TAG = MainActivity.class.toString();
+    private ProgressDialog mProgressDialog;
+    private Button signinInButton;
+    private Task<Void> migratorTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        digitsMigratorTask = MigrantDigitsApplication.get(this).getDigitsMigratorTask();
-        digitsMigratorTask.addOnSuccessListener(this, new OnSuccessListener<AuthResult>() {
-            @Override
-            public void onSuccess(AuthResult authResult) {
-                if (authResult.getUser() != null) {
-                    // Either a user was already logged in or token exchange succeeded
-                    Log.d("MyApp", "Digits id preserved:" + authResult.getUser().getUid());
-                    Log.d("MyApp", "Digits Phone number preserved"
-                            + authResult.getUser().getPhoneNumber());
-                    startLoggedInUX();
-                } else {
-                    // No tokens were found to exchange and no firebase user logged in.
-                    startLoginWithFirebaseUI();
-                }
-            }
-        }).addOnFailureListener(this, new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                // Error migrating digits token
-                startLoginWithFirebaseUI();
-            }
-        });
+        setContentView(R.layout.sign_in_layout);
+
+        signinInButton = (Button) findViewById(R.id.sign_in);
+        signinInButton.setOnClickListener(this);
+        migratorTask = MigrantDigitsApplication.get(this).getDigitsMigratorTask();
+        mProgressDialog = new ProgressDialog(this);
+
+        if(!migratorTask.isComplete()) {
+            mProgressDialog.setIndeterminate(true);
+            mProgressDialog.setTitle(getString(R.string.signing_in));
+            mProgressDialog.setMessage(getString(R.string.looking_for_digits_session));
+            mProgressDialog.show();
+        }
+
+        migratorTask.addOnSuccessListener(this,
+                new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void authResult) {
+                        FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+
+                        if (u != null) {
+                            // Either a user was already logged in or token exchange succeeded
+                            Log.d("MyApp", "Digits id preserved:" + u.getUid());
+                            Log.d("MyApp", "Digits phone number preserved: " + u.getPhoneNumber());
+                            mProgressDialog.setMessage("Logged in!");
+                            mProgressDialog.dismiss();
+                            startLoggedInUX();
+                        } else {
+                            // No tokens were found to exchange and no firebase user logged in.
+                            mProgressDialog.dismiss();
+                        }
+                    }
+                }).addOnFailureListener(this,
+                new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Error migrating digits token
+                        mProgressDialog.dismiss();
+                    }
+                });
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(resultCode == RC_SIGN_IN) {
-            Toast.makeText(this, "Signed in using firebae ui", Toast.LENGTH_LONG);
+        if(resultCode == RESULT_OK && requestCode == RC_SIGN_IN) {
+            Toast.makeText(this, R.string.signed_in_sing_firebase_ui, Toast.LENGTH_LONG).show();
             startLoggedInUX();
         }
     }
 
+    @Override
+    public void onClick(View v) {
+        startLoginWithFirebaseUI();
+    }
+
     private void startLoggedInUX() {
-        Intent intent = new Intent(this, LoggedInActivity.class);
-        startActivity(intent);
+        startActivity(new Intent(MainActivity.this, LoggedInActivity.class));
+        finish();
     }
 
     private void startLoginWithFirebaseUI() {

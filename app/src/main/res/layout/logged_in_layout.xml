@@ -29,7 +29,7 @@
 
         <Button
             android:id="@+id/sign_out"
-            android:text="Sign out"
+            android:text="@string/sign_out"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textIsSelectable="true"/>

@@ -32,14 +32,22 @@ import java.nio.charset.Charset;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public class StorageHelpers {
+    @Nullable
     private final SharedPreferences mDigitsSharedPreferences;
+    @NonNull
     public static final String DIGITS_SESSION_PREF_FILE_NAME =
             "com.digits.sdk.android:digits:session_store";
+    @NonNull
     public static final String DIGITS_PREF_KEY_ACTIVE_SESSION = "active_session";
+    @NonNull
     public static final String FABRIC_API_KEY_KEY = "io.fabric.ApiKey";
+    @NonNull
     public static final String DIGITS_CONSUMER_KEY_KEY = "com.digits.sdk.android.ConsumerKey";
+    @NonNull
     public static final String DIGITS_CONSUMER_SECRET_KEY = "com.digits.sdk.android.ConsumerSecret";
-    public static final String BASE_64_NONE_ALGORITHM_JWT_HEADER = "eyJhbGciOiJub25lIn0=";
+    @NonNull
+    private static final String BASE_64_NONE_ALGORITHM_JWT_HEADER = "eyJhbGciOiJub25lIn0=";
+    @NonNull
     private static final String TAG = "DigitsMigrationhelpers";
 
     public StorageHelpers(@NonNull Context context) {
@@ -56,7 +64,7 @@ public class StorageHelpers {
     }
 
     @Nullable
-    public String getApiKeyFromManifest(Context context, String key) {
+    public String getApiKeyFromManifest(@NonNull Context context, @NonNull String key) {
         String apiKey = null;
         try {
             final String packageName = context.getPackageName();
@@ -88,7 +96,7 @@ public class StorageHelpers {
                 );
     }
 
-    @Nullable
+    @NonNull
     public String getUnsignedJWT(@NonNull JSONObject payload) {
         return BASE_64_NONE_ALGORITHM_JWT_HEADER
                 + "."

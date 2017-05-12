@@ -17,10 +17,12 @@ package migration.auth.digits.google.com.digitsmigrationhelpers;
 import android.content.Context;
 
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.digits.auth.migration.RobolectricGradleTestRunner;
-import com.google.digits.auth.migration.internal.ClearSessionContinuation;
+import com.google.digits.auth.migration.internal.FirebaseWebRequestException;
 import com.google.digits.auth.migration.internal.StorageHelpers;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.AdditionalUserInfo;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -37,11 +39,10 @@ import org.mockito.MockitoAnnotations;
 import org.robolectric.annotation.Config;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -71,12 +72,12 @@ public class AuthMigratorTest {
     StorageHelpers mockStorageHelpers;
     @Mock
     FirebaseAuth mockFirebaseAuth;
-    @Mock
-    Task<AuthResult> mockAuthResultTask;
     @Captor
     private ArgumentCaptor<JSONObject> mjsonCaptor;
     @Mock
     private FirebaseUser mockFirebaseUser;
+    private AuthResult authResult;
+    private Task<AuthResult> authResultTask;
 
     @Before
     public void setUp() throws Exception {
@@ -87,22 +88,76 @@ public class AuthMigratorTest {
                 .DIGITS_CONSUMER_SECRET_KEY))).thenReturn(DIGITS_CONSUMER_SECRET);
         when(mockStorageHelpers.getApiKeyFromManifest(any(Context.class), eq(StorageHelpers
                 .FABRIC_API_KEY_KEY))).thenReturn(FABRIC_API_KEY);
+        authResult = new AuthResult() {
+            @Override
+            public FirebaseUser getUser() {
+                return mockFirebaseUser;
+            }
+
+            @Override
+            public AdditionalUserInfo getAdditionalUserInfo() {
+                return null;
+            }
+        };
+
+        authResultTask = Tasks.forResult(authResult);
     }
 
     @Test
     public void migrateAndClear_tokenFound() throws JSONException {
-        Task mockTask = mock(Task.class);
         when(mockStorageHelpers.getDigitsSessionJson()).thenReturn(VALID_DIGITS_SESSION);
         when(mockStorageHelpers.getUnsignedJWT(mjsonCaptor.capture())).thenReturn(DIGITS_JWT);
-        when(mockFirebaseAuth.signInWithCustomToken(DIGITS_JWT)).thenReturn(mockAuthResultTask);
-        when(mockAuthResultTask.continueWithTask(any(ClearSessionContinuation.class)))
-                .thenReturn(mockTask);
-
+        when(mockFirebaseAuth.signInWithCustomToken(DIGITS_JWT)).thenReturn(authResultTask);
         AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
                 mockFirebaseAuth);
-
-        assertEquals(mockTask, authMigrator.migrate(true));
+        assertTrue(authMigrator.migrate(true).isSuccessful());
         verify(mockFirebaseAuth).signInWithCustomToken(DIGITS_JWT);
+        verify(mockStorageHelpers).clearDigitsSession();
+        checkCompleteJsonObject(mjsonCaptor.getValue());
+    }
+
+    @Test
+    public void migrateAndClear_badSessionResponse() throws JSONException {
+        Task<AuthResult> task = Tasks.forException(new FirebaseWebRequestException("msg", 400));
+
+        when(mockStorageHelpers.getDigitsSessionJson()).thenReturn(VALID_DIGITS_SESSION);
+        when(mockStorageHelpers.getUnsignedJWT(mjsonCaptor.capture())).thenReturn(DIGITS_JWT);
+        when(mockFirebaseAuth.signInWithCustomToken(DIGITS_JWT)).thenReturn(task);
+        AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
+                mockFirebaseAuth);
+        assertFalse(authMigrator.migrate(true).isSuccessful());
+        verify(mockFirebaseAuth).signInWithCustomToken(DIGITS_JWT);
+        verify(mockStorageHelpers).clearDigitsSession();
+        checkCompleteJsonObject(mjsonCaptor.getValue());
+    }
+
+    @Test
+    public void migrateAndClear_unauthorizedSessionResponse() throws JSONException {
+        Task<AuthResult> task = Tasks.forException(new FirebaseWebRequestException("msg", 403));
+
+        when(mockStorageHelpers.getDigitsSessionJson()).thenReturn(VALID_DIGITS_SESSION);
+        when(mockStorageHelpers.getUnsignedJWT(mjsonCaptor.capture())).thenReturn(DIGITS_JWT);
+        when(mockFirebaseAuth.signInWithCustomToken(DIGITS_JWT)).thenReturn(task);
+        AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
+                mockFirebaseAuth);
+        assertFalse(authMigrator.migrate(true).isSuccessful());
+        verify(mockFirebaseAuth).signInWithCustomToken(DIGITS_JWT);
+        verify(mockStorageHelpers).clearDigitsSession();
+        checkCompleteJsonObject(mjsonCaptor.getValue());
+    }
+
+    @Test
+    public void migrateAndKeep_unauthorizedSessionResponse() throws JSONException {
+        Task<AuthResult> task = Tasks.forException(new FirebaseWebRequestException("msg", 403));
+
+        when(mockStorageHelpers.getDigitsSessionJson()).thenReturn(VALID_DIGITS_SESSION);
+        when(mockStorageHelpers.getUnsignedJWT(mjsonCaptor.capture())).thenReturn(DIGITS_JWT);
+        when(mockFirebaseAuth.signInWithCustomToken(DIGITS_JWT)).thenReturn(task);
+        AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
+                mockFirebaseAuth);
+        assertFalse(authMigrator.migrate(false).isSuccessful());
+        verify(mockFirebaseAuth).signInWithCustomToken(DIGITS_JWT);
+        verify(mockStorageHelpers, times(0)).clearDigitsSession();
         checkCompleteJsonObject(mjsonCaptor.getValue());
     }
 
@@ -110,13 +165,14 @@ public class AuthMigratorTest {
     public void migrateAndKeep_tokenFound() throws JSONException {
         when(mockStorageHelpers.getDigitsSessionJson()).thenReturn(VALID_DIGITS_SESSION);
         when(mockStorageHelpers.getUnsignedJWT(mjsonCaptor.capture())).thenReturn(DIGITS_JWT);
-        when(mockFirebaseAuth.signInWithCustomToken(DIGITS_JWT)).thenReturn(mockAuthResultTask);
+        when(mockFirebaseAuth.signInWithCustomToken(DIGITS_JWT)).thenReturn(authResultTask);
 
         AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
                 mockFirebaseAuth);
 
-        assertEquals(mockAuthResultTask, authMigrator.migrate(false));
+        assertTrue(authMigrator.migrate(false).isSuccessful());
         verify(mockFirebaseAuth).signInWithCustomToken(DIGITS_JWT);
+        verify(mockStorageHelpers, times(0)).clearDigitsSession();
         checkCompleteJsonObject(mjsonCaptor.getValue());
     }
 
@@ -127,10 +183,9 @@ public class AuthMigratorTest {
         AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
                 mockFirebaseAuth);
 
-        Task<AuthResult> task = authMigrator.migrate(true);
-        assertTrue(task.isSuccessful());
-        assertEquals(mockFirebaseUser, task.getResult().getUser());
+        assertTrue(authMigrator.migrate(true).isSuccessful());
         verify(mockStorageHelpers).clearDigitsSession();
+        verify(mockFirebaseAuth, times(0)).signInWithCustomToken(any(String.class));
     }
 
     @Test
@@ -139,11 +194,9 @@ public class AuthMigratorTest {
 
         AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
                 mockFirebaseAuth);
-
-        Task<AuthResult> task = authMigrator.migrate(false);
-        assertTrue(task.isSuccessful());
-        assertEquals(mockFirebaseUser, task.getResult().getUser());
+        assertTrue(authMigrator.migrate(false).isSuccessful());
         verify(mockStorageHelpers, times(0)).clearDigitsSession();
+        verify(mockFirebaseAuth, times(0)).signInWithCustomToken(any(String.class));
     }
 
     @Test
@@ -152,9 +205,8 @@ public class AuthMigratorTest {
 
         AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
                 mockFirebaseAuth);
-        Task<AuthResult> task = authMigrator.migrate(true);
-        assertTrue(task.isSuccessful());
-        assertNull(task.getResult().getUser());
+        assertTrue(authMigrator.migrate(true).isSuccessful());
+        verify(mockFirebaseAuth, times(0)).signInWithCustomToken(any(String.class));
     }
 
     @Test
@@ -164,10 +216,9 @@ public class AuthMigratorTest {
         AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
                 mockFirebaseAuth);
 
-        Task<AuthResult> task = authMigrator.migrate(true);
-        assertTrue(task.isSuccessful());
-        assertNull(task.getResult().getUser());
+        assertTrue(authMigrator.migrate(true).isSuccessful());
         verify(mockStorageHelpers).clearDigitsSession();
+        verify(mockFirebaseAuth, times(0)).signInWithCustomToken(any(String.class));
     }
 
     @Test
@@ -177,16 +228,15 @@ public class AuthMigratorTest {
         AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
                 mockFirebaseAuth);
 
-        Task<AuthResult> task = authMigrator.migrate(false);
-        assertTrue(task.isSuccessful());
-        assertNull(task.getResult().getUser());
+        assertTrue(authMigrator.migrate(false).isSuccessful());
         verify(mockStorageHelpers,times(0)).clearDigitsSession();
+        verify(mockFirebaseAuth, times(0)).signInWithCustomToken(any(String.class));
     }
 
     @Test
     public void migrateCustomSession() throws JSONException {
         when(mockStorageHelpers.getUnsignedJWT(mjsonCaptor.capture())).thenReturn(DIGITS_JWT);
-        when(mockFirebaseAuth.signInWithCustomToken(DIGITS_JWT)).thenReturn(mockAuthResultTask);
+        when(mockFirebaseAuth.signInWithCustomToken(DIGITS_JWT)).thenReturn(authResultTask);
 
         AuthMigrator authMigrator = new AuthMigrator(mockFirebaseApp, mockStorageHelpers,
                 mockFirebaseAuth);
@@ -197,7 +247,7 @@ public class AuthMigratorTest {
                 .setConsumerSecret(DIGITS_CONSUMER_SECRET)
                 .setFabricApiKey(FABRIC_API_KEY);
 
-        assertEquals(mockAuthResultTask, authMigrator.migrate(builder));
+        assertTrue(authMigrator.migrate(builder).isSuccessful());
         verify(mockFirebaseAuth).signInWithCustomToken(DIGITS_JWT);
 
         JSONObject jsonObject = mjsonCaptor.getValue();

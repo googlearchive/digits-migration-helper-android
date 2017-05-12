@@ -16,16 +16,14 @@ package migration.auth.digits.google.com.digitsmigrationhelpers;
 
 import com.google.digits.auth.migration.RobolectricGradleTestRunner;
 
-import migration.auth.digits.google.com.digitsmigrationhelpers.RedeemableDigitsSessionBuilder;
-
-import static junit.framework.Assert.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.annotation.Config;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(RobolectricGradleTestRunner.class)
 @Config(manifest = Config.NONE)
