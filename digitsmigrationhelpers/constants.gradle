@@ -20,7 +20,7 @@ ext {
 
     mavenGroup = 'com.firebase'
     mavenArtifactId = 'digitsmigrationhelpers'
-    mavenVersion = '0.1.3'
+    mavenVersion = '0.1.0'
 
     bintrayOrg = 'firebase'
 }

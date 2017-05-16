@@ -119,10 +119,10 @@ public final class AuthMigrator {
      * will be (optionally) removed, but the logged in user will not be affected</li>
      * <li>Looks up the legacy digits auth token.</li>
      * <li>Looks for the following keys in the mApp' s AndroidManifest.xml:
-     * <ol><li type="circle">"io.fabric.ApiKey"</li>
-     *     <li type="circle">"com.digits.sdk.android.ConsumerKey"</li>
-     *     <li type="circle">"com.digits.sdk.android.ConsumerSecret"</li>
-     * </ol></li>
+     * <ul><li>"io.fabric.ApiKey"</li>
+     *     <li>"com.digits.sdk.android.ConsumerKey"</li>
+     *     <li>"com.digits.sdk.android.ConsumerSecret"</li>
+     * </ul></li>
      * <li>Sends the legacy token and  keys to a Firebase server to exchange it for a new
      * Firebase auth token.</li>
      * <li>Uses the new auth token to log in the user.</li>
