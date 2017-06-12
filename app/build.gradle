@@ -1,0 +1,60 @@
+apply plugin: 'com.android.application'
+
+Properties props = new Properties()
+try {
+    props.load(file('digits.properties').newDataInputStream())
+} catch (Exception ex) {
+    throw new GradleException("Missing digits.properties, check the digits.properties.sample file.");
+}
+
+repositories {
+    maven { url 'https://maven.fabric.io/public' }
+}
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
+    defaultConfig {
+        applicationId "com.migrantdigitsapplication.digits"
+        minSdkVersion 16
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        debug {
+            resValue "string", "CONSUMER_KEY", "\"${props.getProperty("twitterConsumerKey")}\""
+            resValue "string", "CONSUMER_SECRET", "\"${props.getProperty("twitterConsumerSecret")}\""
+            resValue "string", "FABRIC_API_KEY", "\"${props.getProperty("fabricApiKey")}\""
+        }
+        release {
+            resValue "string", "CONSUMER_KEY", "\"${props.getProperty("twitterConsumerKey")}\""
+            resValue "string", "CONSUMER_SECRET", "\"${props.getProperty("twitterConsumerSecret")}\""
+            resValue "string", "FABRIC_API_KEY", "\"${props.getProperty("fabricApiKey")}\""
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    lintOptions {
+        warning 'InvalidPackage'
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile('com.google.firebase:firebase-auth:11.0.0')
+    compile project(path: ':digitsmigrationhelpers')
+
+    // The following dependencies are not required to use the digits migration helper library.
+    // They are used to make some aspects of the demo app implementation simpler for
+    // demonstrative purposes, and you may find them useful in your own apps.
+    compile('com.digits.sdk.android:digits:2.0.0@aar') {
+        transitive = true;
+    }
+    //noinspection GradleDependency
+    compile 'com.android.support:appcompat-v7:25.1.1'
+    compile ('com.firebaseui:firebase-ui-auth:2.0.0')
+}
+apply plugin: 'com.google.gms.google-services'
+

@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">MigrantDigitsApplication</string>
+    <string name="sign_out">Sign out</string>
+    <string name="sign_in">Sign in with firebase</string>
+    <string name="looking_for_digits_session">Looking for digits session</string>
+    <string name="signing_in">Signing in</string>
+    <string name="signed_in_sing_firebase_ui">Signed in using firebase ui</string>
+</resources>
