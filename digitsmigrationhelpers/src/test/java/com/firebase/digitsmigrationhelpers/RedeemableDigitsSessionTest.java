@@ -11,9 +11,9 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.digits.auth.migration;
+package com.firebase.digitsmigrationhelpers;
 
-import com.google.digits.auth.migration.internal.RedeemableDigitsSession;
+import com.firebase.digitsmigrationhelpers.internal.ClearSessionContinuation;
 
 import org.junit.Test;
 
@@ -41,8 +41,8 @@ public class RedeemableDigitsSessionTest {
 
     @Test
     public void testInstanceWithNonNullValues() throws Exception {
-        RedeemableDigitsSession session =
-                new RedeemableDigitsSession(DIGITS_ID, PHONE_NUMBER, EMAIL,
+        ClearSessionContinuation.RedeemableDigitsSession session =
+                new ClearSessionContinuation.RedeemableDigitsSession(DIGITS_ID, PHONE_NUMBER, EMAIL,
                         IS_EMAIL_VERIFIED, AUTH_TOKEN, AUTH_TOKEN_SECRET, CONSUMER_KEY,
                         CONSUMER_SECRET, FABRIC_API_KEY);
 
@@ -60,8 +60,8 @@ public class RedeemableDigitsSessionTest {
 
     @Test
     public void testInstancesTokenWithNullValues() throws Exception {
-        RedeemableDigitsSession session =
-                new RedeemableDigitsSession(null, null, EMAIL,
+        ClearSessionContinuation.RedeemableDigitsSession session =
+                new ClearSessionContinuation.RedeemableDigitsSession(null, null, EMAIL,
                         IS_EMAIL_VERIFIED, AUTH_TOKEN, AUTH_TOKEN_SECRET, CONSUMER_KEY,
                         CONSUMER_SECRET, FABRIC_API_KEY);
 

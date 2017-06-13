@@ -5,7 +5,7 @@ import android.content.Context;
 
 import com.google.android.gms.tasks.Task;
 
-import migration.auth.digits.google.com.digitsmigrationhelpers.AuthMigrator;
+import com.firebase.digitsmigrationhelpers.AuthMigrator;
 import migration.auth.digits.google.com.migrantdigitsapplication.BuildConfig;
 
 public class MigrantDigitsApplication extends Application {

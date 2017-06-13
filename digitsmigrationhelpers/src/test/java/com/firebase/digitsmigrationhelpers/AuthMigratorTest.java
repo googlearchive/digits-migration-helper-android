@@ -12,15 +12,14 @@
  * limitations under the License.
  */
 
-package migration.auth.digits.google.com.digitsmigrationhelpers;
+package com.firebase.digitsmigrationhelpers;
 
 import android.content.Context;
 
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
-import com.google.digits.auth.migration.RobolectricGradleTestRunner;
-import com.google.digits.auth.migration.internal.FirebaseWebRequestException;
-import com.google.digits.auth.migration.internal.StorageHelpers;
+import com.firebase.digitsmigrationhelpers.internal.FirebaseWebRequestException;
+import com.firebase.digitsmigrationhelpers.internal.StorageHelpers;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AdditionalUserInfo;
 import com.google.firebase.auth.AuthResult;
@@ -37,6 +36,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.robolectric.annotation.Config;
+
+import migration.auth.digits.google.com.digitsmigrationhelpers.BuildConfig;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;

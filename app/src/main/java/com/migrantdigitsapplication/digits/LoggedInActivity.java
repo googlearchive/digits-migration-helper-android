@@ -1,13 +1,14 @@
 package com.migrantdigitsapplication.digits;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
@@ -15,7 +16,7 @@ import com.google.firebase.auth.FirebaseUser;
 
 import migration.auth.digits.google.com.migrantdigitsapplication.R;
 
-public class LoggedInActivity extends Activity implements View.OnClickListener {
+public class LoggedInActivity extends AppCompatActivity implements View.OnClickListener {
     private TextView mPhoneNumber;
     private TextView mUserId;
     private Button mSignOut;
@@ -61,6 +62,7 @@ public class LoggedInActivity extends Activity implements View.OnClickListener {
 
     @Override
     public void onClick(View v) {
-        AuthUI.getInstance().signOut(LoggedInActivity.this);
+        AuthUI.getInstance().signOut(this);
+        Toast.makeText(this, "Signed out of firebase session", Toast.LENGTH_SHORT).show();
     }
 }

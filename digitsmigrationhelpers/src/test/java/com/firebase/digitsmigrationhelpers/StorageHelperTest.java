@@ -12,11 +12,11 @@
  * limitations under the License.
  */
 
-package com.google.digits.auth.migration;
+package com.firebase.digitsmigrationhelpers;
 
 
-import static com.google.digits.auth.migration.internal.StorageHelpers.DIGITS_PREF_KEY_ACTIVE_SESSION;
-import static com.google.digits.auth.migration.internal.StorageHelpers.DIGITS_SESSION_PREF_FILE_NAME;
+import static com.firebase.digitsmigrationhelpers.internal.StorageHelpers.DIGITS_PREF_KEY_ACTIVE_SESSION;
+import static com.firebase.digitsmigrationhelpers.internal.StorageHelpers.DIGITS_SESSION_PREF_FILE_NAME;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.Mockito.verify;
@@ -30,7 +30,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 
-import com.google.digits.auth.migration.internal.StorageHelpers;
+import com.firebase.digitsmigrationhelpers.internal.StorageHelpers;
 
 import org.json.JSONException;
 import org.json.JSONObject;

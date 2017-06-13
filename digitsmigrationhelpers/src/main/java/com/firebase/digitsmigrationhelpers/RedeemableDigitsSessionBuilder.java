@@ -12,14 +12,14 @@
  * limitations under the License.
  */
 
-package migration.auth.digits.google.com.digitsmigrationhelpers;
+package com.firebase.digitsmigrationhelpers;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.google.digits.auth.migration.internal.RedeemableDigitsSession;
+import com.firebase.digitsmigrationhelpers.internal.ClearSessionContinuation;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -168,15 +168,15 @@ public class RedeemableDigitsSessionBuilder {
     }
 
     /**
-     * Build {@link RedeemableDigitsSession} using the parameters provided
+     * Build {@link ClearSessionContinuation.RedeemableDigitsSession} using the parameters provided
      *
      * We permit null auth token and secret as permissible but corrupt tokens. Once these are
      * invalidated by the service, these are deleted from the client in
-     * {@link com.google.digits.auth.migration.internal.ClearSessionContinuation}
+     * {@link ClearSessionContinuation}
 
      * @return redeemable digits session
      */
-    public RedeemableDigitsSession build() {
+    public ClearSessionContinuation.RedeemableDigitsSession build() {
         checkNotNull(authToken, "Auth Token cannot be null");
         checkNotNull(authTokenSecret, "Token Secret cannot be null");
 
@@ -195,7 +195,7 @@ public class RedeemableDigitsSessionBuilder {
                     "Contact support@fabric.io for assistance");
         }
 
-        return new RedeemableDigitsSession(id, phoneNumber, email, isEmailVerified, authToken,
+        return new ClearSessionContinuation.RedeemableDigitsSession(id, phoneNumber, email, isEmailVerified, authToken,
                 authTokenSecret, consumerKey, consumerSecret, fabricApiKey);
     }
 

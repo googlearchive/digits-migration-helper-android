@@ -17,7 +17,7 @@ This guide provides instructions on how to integrate and test this sdk.
 1. Add the following to your app module's build.gradle:
   ```groovy
   compile 'com.google.firebase:firebase-auth:11.0.0'
-  compile 'com.firebase:digitsmigrationhelpers:0.1.0'
+  compile 'com.firebase:digitsmigrationhelpers:0.1.1'
   ```
 2. To your AndroidManifest.xml, add the following entries
   ```xml
