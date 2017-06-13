@@ -12,9 +12,7 @@
  * limitations under the License.
  */
 
-package migration.auth.digits.google.com.digitsmigrationhelpers;
-
-import com.google.digits.auth.migration.RobolectricGradleTestRunner;
+package com.firebase.digitsmigrationhelpers;
 
 import org.json.JSONException;
 import org.json.JSONObject;

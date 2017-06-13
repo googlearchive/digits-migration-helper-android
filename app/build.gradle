@@ -54,7 +54,7 @@ dependencies {
     }
     //noinspection GradleDependency
     compile 'com.android.support:appcompat-v7:25.1.1'
-    compile ('com.firebaseui:firebase-ui-auth:2.0.0')
+    compile 'com.firebaseui:firebase-ui-auth:2.0.0'
 }
 apply plugin: 'com.google.gms.google-services'
 

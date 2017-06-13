@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.google.digits.auth.migration.internal;
+package com.firebase.digitsmigrationhelpers.internal;
 
 import android.support.annotation.RestrictTo;
 

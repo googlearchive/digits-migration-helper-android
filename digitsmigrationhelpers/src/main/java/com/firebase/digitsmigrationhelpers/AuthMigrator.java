@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package migration.auth.digits.google.com.digitsmigrationhelpers;
+package com.firebase.digitsmigrationhelpers;
 
 import android.app.Activity;
 import android.content.Context;
@@ -20,12 +20,12 @@ import android.support.annotation.NonNull;
 import android.support.annotation.VisibleForTesting;
 import android.util.Log;
 
+import com.firebase.digitsmigrationhelpers.internal.ClearSessionContinuation;
+import com.firebase.digitsmigrationhelpers.internal.StorageHelpers;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
-import com.google.digits.auth.migration.internal.ClearSessionContinuation;
-import com.google.digits.auth.migration.internal.StorageHelpers;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
