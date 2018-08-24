@@ -2,6 +2,7 @@
 This repository has been archived and is no longer maintained.
 
 ![status: inactive](https://img.shields.io/badge/status-inactive-red.svg)
+
 # Digits Android Auth Migrator
 
 An Android library for migrating logged in users from the Digits SDK to the new
